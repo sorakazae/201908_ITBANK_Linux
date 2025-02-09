@@ -1,0 +1,3 @@
+mknod /dev/md125 b 9 125 -> raid 0
+mknod /dev/md126 b 9 126 -> raid 1
+mknod /dev/md127 b 9 127 -> raid 5

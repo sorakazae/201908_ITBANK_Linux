@@ -1,0 +1,759 @@
+-. 네트워크 기본
+-. Xinetd
+-. SSH
+
+
+@@ 네트워크 기본
+
+
+! 네트워크 설정파일
+
+1) /etc/hosts
+-> 호스트 네임 설정 파일.
+   만약 네임서버가 사용되지 않으면 연결하고자 하는 모든 호스트의
+   이름과 IP Address가 여기에 지정하여 사용.
+
+2) /etc/host.conf
+-> 도메인 질의에 대한 응답할 순서 정의 파일
+
+3) /etc/resolv.conf
+-> 사용할 dns 서버 설정 파일
+
+4) /etc/nsswitch.conf
+-> hosts, network,protocols 등의 각종 데이터베이스가 어떤 순서로
+   찾아지는가를 결정.
+-> hosts : files dns 
+   이는 호스트 이름을 찾을 때 우선 파일(/etc/hosts)에서 찾고
+   다음에 DNS를 참조하라는 뜻
+
+5) /etc/sysconfig/network
+-> 호스트이름 등 설정 파일
+
+6) /etc/sysconfig/network-scripts/ifcfg-eth0
+-> 인터페이스 장치에 대한 설정 파일
+DEVICE    -> 인터페이스 장치명
+BOOTPROTO -> 프로토콜 지정(static, dhcp)
+BROADCAST -> 브로드캐스트
+HWADDR    -> 하드웨어주소
+IPADDR    -> ip 주소(static)
+NETMASK   -> 넷마스크
+NETWORK   -> 네트워크 주소
+ONBOOT    -> 부팅시 활성화 여부
+TYPE      -> 데이터링크 계층의 타입(주로 ethernet)
+GATEWAY   -> 게이트웨이 주소
+DNS1      -> dns 서버 주소
+
+
+! 네트워크 관련 명령어
+
+# service network {start|stop|restart|status|reload}
+->  네트워크 시작/중지
+
+# ifconfig -> 네트워크 인터페이스 설정 및 설정값 확인
+# ifconfig eth0 192.168.0.100 netmask 255.255.255.0 broadcast 192.168.0.255
+# ifconfig [interface] {up|down}
+
+# route -> 라우팅 테이블을 작성하거나 확인
+# route add default gw 192.168.0.1
+# route del default gw 192.168.0.1
+# route print  -> windows 에서 수행. 라우팅 테이블 확인.
+
+# netstat [option] -> 네트워크 상태 및 프로토콜/포트 정보 확인
+-a -> 모든 소켓정보 출력
+-n -> 10진수 수치 정보로 출력
+-r -> 라우팅 정보
+-p -> 각 소켓에서 실행되는 프로그램이름과 프로세스 ID 출력
+-i -> 모든 네트워크 인터페이스 정보 출력
+-c -> netstat 결과를 연속적으로 출력
+-l -> 현재 listen 중인 소켓정보 출력
+-s -> 각 프로토콜 통계정보
+-t -> tcp 소켓연결정보 출력
+-A -> 프로토콜 상태별로 보기
+
+<tcp 상태정보>
+LISTEN       -> 관련 프로세스 데몬이 떠있으며 연결가능한 상태임.
+SYN-SENT     -> 연결요청한 상태
+SYN-RECEIVED -> 연결요구에 대한 응답후 확인메시지를 기다리는 상태
+ESTABLISHED  -> 앞의 3 단계 연결과정 완료후 데이터 통신이 가능한 상태
+FIN-WAIT1,CLOSE-WAIT,FIN-WAIT2 -> 연결종료을 위한 과정
+CLOSING      -> 전송된 메시지가 유실된 상태
+TIME-WAIT    -> 연결 종료되었지만 한동안 유지하고 있는 상태
+CLOSED       -> 연결이 완전히 종료.
+
+# netstat -anp    -> 열려있는 모든 포트 확인
+# netstat -anp | grep LISTEN
+# netstat | grep 80 | grep ESTABLISHED | wc -l -> 웹 동시 접속자 수 확인
+# netstat -rn     -> 네트워크 상태
+# netstat -A inet -> TCP 프로토콜 연결상태 정보만 출력
+# netstat -s      -> 통계값 확인
+# netstat -ntlp
+
+# netstat -anp tcp -> windows에서 수행
+# netstat -anp udp -> windows에서 수행
+
+# ping [option] 
+-> 네트워크 환경 장비들 간의 통신이 잘 되고 있는지 확인하는 명령어.
+   ICMP 프로토콜을 이용하여 로컬 호스트와 외부와의 통신이 이루어지고
+   있는지 테스트하기 위한 네트워크 명령어로 결과값 중 TTL 값으로
+   사용되는 운영체제도 알 수 있음.
+
+-c -> 패킷을 보낼 횟수 지정. default는 무한.
+-s -> 패킷의 크기를 지정. 기본 56Byte
+-i -> 패킷을 보낼 간격 지정. 기본 1초
+-t -> ttl값을 수동으로 지정. 기본은 보내는 쪽의 서버의 기본값이 적용.
+-w -> ping 테스트 시 패킷을 보내고 몇 초 후에 실행을 멈출것인지 설정
+
+# ping -c 4 -i 2 192.168.1.32 -> 4개의 패킷을 2초 간격으로 전송
+
+
+# traceroute
+-> 네트워크 통신 경로를 확인하는 명령어로 패킷이 목적지까지 전달되는
+   경로를 확인하는 명령어. ICMP를 이용하여 TTL값을 포함하고 있는
+   패킷을 전송하여 반환값을 출력.
+
+# traceroute -i eth0 168.126.63.1 
+-> 특정 인터페이스를 통해 목적지의 호스트까지 경로 확인
+
+# arp [option]
+-> 실제로 네트워크상에서의 통신은 MAC 주소를 이용하게 됨.
+   ARP cache는 IP 주소와 MAC 주소의 목록을 유지하는데 사용되는
+   메커니즘으로, 서로 간에 맵핑된 정보는 cache에 잠시 동안
+   보관되는데 최근에 맵핑된 테이블 정보 확인.
+-a -> arp 캐시 테이블에 저장되어있는 모든 정보를 출력
+-s -> 캐시에 저장된 특정 IP 주소에 대한 MAC Address 변경
+-d -> 캐시에 저장된 특정 MAC Address 삭제
+-i -> 지정한 네트워크 인터페이스의 ARP를 출력
+
+# nslookup  or  dig
+-> 도메인 이름과 ip 주소를 확인하기 위하여 특정 네임서버에
+   질의할 수 있는 기능을 갖는 네트워크 관리 툴.
+
+
+
+
+
+
+@@ Xinetd
+
+-> 네트워크 슈퍼 데몬이라고 부르며 xinetd는 외부로부터의
+   네트워크 접속 요청을 처리하게 되며 네트워크 접속이
+   정상적으로 이루어진 뒤에는 실제 서비스를 하는 프로그램에게
+   연결을 넘겨주게 됨.
+
+# rpm -qa | grep xinetd -> 설치되어 있는지 여부 확인
+# yum -y install xinetd -> xinetd 패키지 설치
+# service xinetd { start|stop|restart|status } -> xinetd 서비스 관리
+
+! xinetd 설정파일
+/etc/inetd.conf
+defaults       -> 기본설정
+instances      -> 허용 프로세스 갯수
+log_type       -> 어떤 형태로 로그 기록을 저장할 것인지 지정
+log_on_success -> 접속 성공시 로그에 기록할 정보
+log_on_failure -> 접속 실패시 로그에 기록할 정보
+cps            -> 초당 요청받은 수에 대한 제한 설정
+includedir     -> 다른 설정 파일 허용할 디렉토리 지정
+
+service  -> /etc/services에 등록된 서비스
+disable  -> 해당 서비스 사용여부 지정
+flags    -> 소켓 작동 관련 플래그
+socket_type -> STREAM(tcp), DGRAM(udp) 등 사용할 소켓 타입 지정
+wait     -> no (대기시간없을경우), yes(대기시간이 필요, 1개의 프로세스만 운용)
+user     -> 해당 데몬 시작할 사용자
+server   -> 서비스 처리할 프로그램 위치
+
+only_from-> 접속 허용할 네트워크 주소
+no_access -> 접속을 허용하지 않을 네트워크 주소
+access_times -> 접속허용할 시간정보지정(시간: 0~23, 분: 0~59)
+banner  -> 접속시 표기할 banner 문구 지정
+bind    -> 접속을 허용할 바인드 주소 지정
+
+
+
+! 서비스 흐름
+
+1. 외부에서 tcp 통신 연결요청(서비스의 요청)이 들어온다.
+ 
+2. xinetd데몬은 외부에서 요청된 서비스에 대한 접근제어권을
+   tcpd(tcp_wrapper)에게 넘겨준다.
+ 
+3. tcp_wrapper은 /etc/hosts.allow와 /etc/hosts.deny파일의
+   설정을 확인하여 "해당 요청자의 접근을 허용할것인가?",
+   "허용하지 않을 것인가?"를 결정.
+ 
+4. 3 의 결정에 의해 허가된 요청일 경우에는 /etc/syslog.conf에
+   설정되어 있는 /var/log/secure파일에 해당접속에 대한 정보를
+   기록하고 /etc/xinetd.d 디렉토리에 있는 해당 파일을 불러들여서
+   서비스를 연결. 
+   이때 /etc/xinetd.d/ 파일내의 server지시자행에 설정되어 있는
+   프로세스 데몬의 위치를 찾아서 요청을 처리하게 됨.
+ 
+5. 3 의 검사에 의해 허가되지 않은 요청일 경우에는
+   /etc/syslog.conf파일에 설정되어 있는 /var/log/secure
+   파일에 허가되지 않은 접속이 있었다는 로그를 남기고
+   접속요청을 거부하게 됨.
+
+
+! 접근 허용/거부 설정 파일
+
+/etc/hosts.allow -> 서비스 접근 허용 리스트
+/etc/hosts.deny  -> 서비스 접근 거부 리스트
+
+<접근제어 설정방법>
+1) 두가지의 항목을 콜론(:)으로 구분. (서비스명:허용 및 거부 리스트)
+2) 동일한 설정값이 hosts.allow와 hosts.deny에 중복되면
+   hosts.allow가 우선 적용.
+3) 접근제어 대상리스트는 스페이스나 콤마(,)로 구분하여 나열.
+
+<예> 
+# vi /etc/hosts.deny
+ALL:ALL
+~
+~
+:wq
+
+# vi /etc/hosts.allow
+in.telnetd : 210.101.112.240 210.101.112.241 211.123.12.12 168.126.3.1
+in.ftpd : 210.101.112.240 210.101.112.241 211.123.12.12 168.126.3.1
+ipop3d : ALL
+sshd: 192.168.0.10
+
+
+
+
+! Telnet 서비스 설치 및 설정 (service port#: 23)
+
+-> 외부 접속 방식중의 하나이며 평문통신을 하게 됨.
+   따라서 보안에 취약하여 스니핑 및 세션하이제킹의 대상이 될 수 있음.
+
+# yum -y install telnet-server -> telnet 서버 패키지 설치
+# yum -y install telnet        -> telnet 클라이언트 패키지 설치
+
+# vi /etc/xinetd.d/telnet      -> telnet 서비스 설정 파일
+
+# service xinted { start|stop|restart|status } 
+-> xinetd 타입의 프로세스이므로 xinetd 프로세스 활성화
+
+# vi /etc/sysconfig/iptables   -> 방화벽 설정 파일 수정
+
+# vi /etc/securetty            -> root 사용자로 직접 로그인하도록하는 방법.
+....
+....
+pts/0
+pts/1
+~
+~
+:wq
+
+
+
+[실습]
+
+다음 조건에 만족도도록 telnet server 를 구성하시오.
+
+-. 접근허용할 주소 : 192.168.0.100
+-. 접근허용할 시간 : AM 9:00~ PM10:00
+-. 총 접속 허용 수 : 100개 까지 허용
+-. DoS 공격에 대비하여 1초에 2회 이상의 접속 발생시 10초 동안
+   새로운 접속 허용하지 않도록 설정.
+-. 접근 허용하지 않을 주소 : 짝궁 윈도우 IP
+
+<Tip> 옵션값 설정은 어디에 설정해도 됨, 즉, /etc/xinetd.conf 또는
+      /etc/xinetd/telnet에 해도 됨. 단, /etc/xintd.conf는 전역 설정이 됨.
+      옵션이 겹치면 지역이 우선 적용됨.
+
+
+
+
+@@ SSH(Secure Shell)
+
+-> 원격 접속할 수 있도록 하는 서비스중의 하나로서 암호화 통신을 하게됨.
+-> rlogin, rsh, telnet 등은 평문통신이지만 ssh는 패킷이
+   암호화되어 전송되므로 Sniffing 에 노출이 되더라도 보안이
+   적용되어 내용을 파악하기 어렵게 됨.
+-> SSH는 공개키 암호화 기법에 기반을 두고 있음.
+
+
+! 암호화 알고리즘( Encryption Algorithm)
+
+-> 암호화에는 크게 대칭형(Symmetric)과 비대칭형(Asymmetric)
+   알고리즘이 있음.
+
+1)대칭형
+-> 비밀키(Secret key) 암호화 방식이라고도 함.
+-> 암호화와 복호화에 사용되는 키가 동일.
+-> 암/복호화가 빠르고 다양한 암호화기법이 존재. DES,SEED 등
+-> 송신자와 수신자간의 키교환시 보안이 취약해짐.
+
+2)비대칭키
+-> 공개키(Public key) 암호화 방식이라고도 함.
+-> 공개키와 개인키라고 하는 하나의 쌍으로 이루어진 키를 사용함.
+-> 일반적인 암호화 통신은 공개키로 암호화하여 전송하게 됨.
+-> 비밀키 전달 등의 키 교환이 필요없으며 기밀 유지 이외의
+   다른목적인 무결성, 부인방지 등으로도 사용 가능.
+-> 암/복호화 속도가 느림. 대표적으로 RSA 가 있음.
+
+SSH Client   ----------연결요청--------->   SSH Server
+             <--공개호스트키,공개서버키--
+             ----------비밀키----------->
+             <--------사용자 인증--------
+
+모든 암호체계는 다음의 2단계를 거치게 됨.
+1) 평문(+ key) -> 암호문  -> 암호화
+2) 암호문(+ key) -> 평문  -> 복호화
+
+. 공개호스트키-> SSH서버를 설치할때 만들어지는 key로서
+  클라이언트가 다른 ssh 서버와 구별할 수 있는 key 임.
+  다음에 접속할때 이 key를 가지고 그 서버가 지난번에 접속한
+  서버와 같은 서버라는것을 확인하게됨.
+  만약 클라이언트가 가지고 있는 known-host list에 서버가 보낸
+  공개키가 존재하지 않으면 클라이언트 프로그램은 사용자에게
+  '이러한 호스트의 key가 도착했는데 리스트에 없으니 known-host
+  list에 넣을까요?' 라는 경고메시지를 보여주게 됨.
+
+
+! 해시 알고리즘(Hash Algorithm)
+
+-> 임의의 길이를 가진 메시지를 받아 들여 고정된 길이의
+   출력값으로 바꿔주는 함수로서 이때의 출력값을 hash 값이라고 함.
+-> 해시 알고리즘을 사용하면 같은 해시 값을 갖는 두개의
+   다른 입력 메시지를 찾아내기란 불가능하므로 하나의 해시
+   값을 가지고 원래의 입력된 메시지를 예측할 수가 없게 됨.
+   따라서 데이터 전송 도중에 송신자 외의 제3자에 의해서
+   데이터가 변조되었는지를 쉽게 파악할 수 있게 되어 전자서명
+   등에 유용하게 사용 됨.
+-> 대표적인 해시 알고리즘으로는 MD5, SHA 가 있음.
+
+
+! ssh 설치
+
+# rpm -qa | grep ssh
+# yum -y install openssh
+# service sshd { start|stop|restart|status }
+# netstat -ntlp | grep 22 -> 서비스 포트 동작상태 확인
+
+! 환경 설정 파일 
+
+/etc/ssh/sshd_config 
+
+1. Port xx
+-> SSH 서비스 포트는 22로 규약되어 있지만 보안을 위해 임의의
+   포트로 변경 하는것도 가능 함. 원하는 포트번호로 변경하고
+   /etc/services 파일에서 ssh 포트값도 변경해 주면 됨.
+
+2. Protocol 2
+-> SSH 프로토콜은 ver 1과 2가 있음. 보안상 Protocol 1은
+   사용하지 않고 Protocol 2 만을 사용. 둘다 사용하려면
+   Protocol 2,1 로 설정.
+
+3. ListenAddress 0.0.0.0
+-> SSH 서버에서 Listen 할 로컬 호스트 주소를 설정. 여러개의
+   IP를 사용중일 때는 특정 IP로 SSH 접속이 가능토록 설정하는
+   옵션으로 0.0.0.0은 모든 네트워크를 의미.
+   사용하고자 하는 특정 IP가 있다면 0.0.0.0 대신 적으면 됨.
+
+4. #Hostkey ~
+-> Protocol 1, 2(rsa, dsa) 의 호스트키 위치를 지정.
+
+5. KeyRegenerationInterval 1h
+-> 자동으로 생성된 키의 유효시간을 지정. 기본값은 3600sec.
+   이 옵션은 호스트의 세션에 있는 키를 캡쳐해서 암호를
+   해독하거나 훔친 키를 재사용 하지 못하도록 하기 위함.
+
+6. ServerKeyBits 768
+-> 서버 키의 비트 길이를 설정. 최소 512, 기본값은 768.
+
+7. SyslogFacility AUTH
+-> syslog 데몬에 의한 로그 facility를 지정.
+
+8. LogLevel INFO -> 로그 레벨(메시지 종류)를 지정.
+
+9. LoginGraceTime 2m
+-> 지정한 시간내에 로그인 하지 않으면 자동으로 접속 해지.
+   0값은 무제한.
+
+10. PermitRootLogin no
+-> 공격자가 임의의 주소에 root 계정으로 접속이 가능한지
+   여부를 무한 스캐닝을 통해 알아 낼 수 있음. 
+   따라서 위와 같이 root 계정의 접근을 막고 일반 유저로
+   접속한 다음 root 계정을 불러오는 것을 권고 함.
+
+11. StrictModes yes
+-> 로그인을 허용하기 앞서 파일 모드 및 사용자 홈 디렉토리
+   소유권과 원격 호스트의 파일들을 ssh 데몬이 체크할 수
+   있도록 할 때 사용.
+
+12. MaxAuthTries 6
+-> 접속당 최대 인증 시도 횟수. 기본값 6, 3회이상 인증
+   실패시 로그가 기록 됨.
+
+13. #RSAAuthentication yes
+-> RSA 인증을 설정. Protocol 1 에서만 적용되는 옵션이므로 주석처리.
+
+14. #PubkeyAuthentication yes
+-> 공개키 인증 설정. Protocol 2에서 적용.
+
+15. #AuthorizedKeysFile      .ssh/authorized_keys
+-> 인증키를 저장할 위치를 지정.
+
+16. RhostsRSAAuthentication no
+-> /etc/ssh/ssh_known_hosts 파일에 있는 호스트에 대한 인증을
+   허용할 것인지 설정.
+
+17. HostbasedAuthentication no
+-> 호스트 기반의 인증 허용 여부를 결정.
+
+18. IgnoreUserKnownHosts yes
+-> RhostsRSAAuthentication, HostbasedAuthentication 인증시
+   ~/.ssh/knownhosts 파일의 호스트들을 제외할 것인지 설정.
+   rhosts 파일을 허용하지 않았으므로 yes로 설정.
+
+19. IgnoreRhosts yes
+-> ~/.rhosts와 ~/.shosts 파일 사용여부를 결정.
+   보안상 이유로 사용하지 않음.
+
+20. PasswordAuthentication yes
+-> 패스워드 인증을 허용. Protocol 1, 2 모두 적용.
+
+21. PermitEmptyPasswords no
+-> 패스워드 인증시 비어있는 스트링을 인정할지 여부를 결정.
+
+22. ChallengeResponseAuthentication no
+-> Challenge-Response 인증을 허용할지 여부를 설정.
+   UsePAM 옵션을 yes로 설정할 경우 이 옵션은 no로 설정해야 함.
+
+23. #UsePAM no
+-> ChallengeResponseAuthentication을 이용한 PAM 인증을
+   허용하는 옵션임. 이 옵션을 yes로 설정하는 경우 열쇠글 인증과
+   동일하게 적용되므로 열쇠글 인증 또는
+   ChallengeResponseAuthentication 옵션을 꺼 놓아야 함.
+
+-> Kerberos 및 GSSAPI 인증에 관한 내용은 필요에 따라 설정.
+
+24. AllowTcpForwarding yes
+-> TCP 포워딩을 가능토록 설정하는 옵션.
+
+25. GatewayPorts no
+-> 클라이언트에 포워드된 포트로 원격 호스트들이 접속할 수 있도록 설정.
+
+26. X11Forwarding no
+-> 원격에서 X11 포워딩을 허용할지 여부를 설정하는 옵션.
+
+27. #X11DisplayOffset 10
+-> X11 포워딩이 될 때 디스플레이 offset을 설정.
+   허용하지 않았으므로 주석 처리.
+
+28. PrintMotd yes
+-> ssh 로그인시 /etc/motd 파일의 내용을 보여줄 것인지 여부결정. 
+   ssh 로그인을 환영하는 메시지나 공지사항 등을 출력되도록 할 수 있음.
+
+29. PrintLastLog yes
+-> 로그인시 지난번 로그인 기록을 보여줄 것인가를 설정.
+
+30. TCPKeepAlive yes
+-> 클라이언트의 접속이 끊어졌는지를 체크하기 위해 서버가 일정시간 메시지를
+   전달.
+
+31. PermitUserEnvironment no
+-> ~/.ssh/enviroment와 ~/.ssh/authorized_keys 파일의
+   environment = 옵션을 sshd 데몬에서 처리 되도록 할것 인가를 설정.
+
+32. Compression delayed
+-> 압축 사용여부를 결정.
+
+33. ClientAliveInterval 0
+-> 클라이언트로부터 sshd 데몬이 아무런 데이터를 받지 못하게 되면
+   암호화된 채널을 통해서 메시지를 클라이언트의 요청에 응답하여
+   보내는데 이 때의 시간 간격을 초단위로 설정.
+   0은 클라이언트에 메시지를 보내지 않는 것을 의미.
+   Protocol 2에서 적용됨.
+
+34. ClientAliveCountMax 3
+-> 서버에게 전달되는 클라이언트의 생존 메시지 회수를 지정.
+   이 옵션으로 지정한 값에 도달하게 되면 sshd 데몬은
+   클라이언트와의 연결을 끊어 버리고 세션을 종료시키게 됨.
+
+35. UseDNS yes
+-> 클라이언트 호스트 주소를 DNS 해석.
+
+36. PidFile /var/run/sshd.pid
+-> sshd 데몬의 PID를 저장할 파일을 지정.
+
+37. MaxStartups 5
+-> 로그인하고 있지 않는 최대 접속 수를 설정. 이 값을 초과하게
+   되고 인증이 성공적으로 이뤄지지 않으면 그 다음 접속이 불가능
+   하게 됨.
+
+38. Subsystem       sftp    /usr/libexec/openssh/sftp-server
+-> sftp는 프로토콜 버전 2에서 사용되는 것으로서 ssh와 같이
+   ftp의 보안을 강화하기 위해 사용되는 보안 ftp 프로그램 임.
+   openssh를 설치하면 /usr/local/ssh/libexec/sftp-server파일이 설치 됨.
+   이것은 sftp 서버용 프로그램으로 클라이언트 sftp프로그램은 설치되지 않음.
+   따라서 서버로 가동시키고 원도용 ssh클라이언트 프로그램이나 SSH2를 설치하면
+   sftp를 사용이 가능하게 됨.
+
+39. UsePrivilegeSeparation yes
+-> 접속된 프로세스에 대해 상위 권한 없이 chroot로 고립된 형태로 작동.
+
+
+
+! OpenSSH 접속
+
+# ssh [server_ip] 
+-> 계정을 지정하지 않으면 로그인된 자신의 계정과 동일한
+   계정으로 접속 시도하게 됨.
+# ssh -l [user_name] [server_ip] -> 지정한 계정명으로 접근 요청
+# ssh [user_name]@[server_ip]    -> -l 옵션과 동일함.
+
+! Win Client에서 SSH 접속
+
+-> puTTy, secureCRT 등 Windows용 SSH Client 패키지 프로그램 설치후 접속.
+
+
+! SCP
+
+-> openssh-clients 패키지에 포함되어 있음.
+-> 암호화 통신에 의해 원격지의 데이터 복사가능함.
+
+# scp [soruce] [server_ip]:/dir_name 
+-> source 파일을 server_ip의 /dir_name에 복사
+
+! SFTP
+
+-> SSH Service와 함깨 동작하는 서비스로서 데이터 전송시
+   암호화된 통신으로 ftp 서비스 구현.
+
+# sftp [server_ip]             -> 자신의 계정과 동일한 계정으로 접속하게됨.
+# sftp [user_name]@[server_ip] -> 특정 계정명으로 접속시도.
+
+! SSH Tunneling
+
+-> SSH Tunneling 기능은 방화벽으로 인해 접근 불가한 서버에도
+   SSH 세션 연결을 이용하여 Remote System으로 접근이 가능하게 됨.
+
+# ssh -R 1004:localhost:22 121.129.63.49 
+-> 방화벽내부의 사설망에서 외부망으로 Session 연결(사설망 -> 공인망)
+
+# netstat -atunp | grep 1004 -> ssh로 session연결 상태 확인
+
+# ssh localhost -p 1004 
+-> 외부(공인)망의 서버에서 방화벽 내부에 있는 사설망 서버에 접속
+
+
+
+! ssh key gen
+
+
+-> 비대칭키(개인키/공개키) 인증서 생성으로 및 인증으로 원격 서버에 접속.
+-> ssh 서버: 192.168.46.100
+-> ssh 클라이언트: 192.168.46.130
+
+1) ssh 서버에서 ssh 설정파일 수정 및 활성화
+[root@localhost ~]# vi /etc/ssh/sshd_config
+
+RSAAuthentication yes
+PubkeyAuthentication yes
+AuthorizedKeysFile	.ssh/authorized_keys
+~
+~
+:wq
+
+[root@localhost ~]# service sshd restart
+
+2) 클라이언트에서 ssh rsa key 생성
+
+[root@localhost ~]# ssh-keygen -t rsa
+Generating public/private rsa key pair.
+Enter file in which to save the key (/root/.ssh/id_rsa): 
+Enter passphrase (empty for no passphrase):  -> 입력하지 않으면 비번없이 바로 접속가능.
+Enter same passphrase again: 
+Your identification has been saved in /root/.ssh/id_rsa.
+Your public key has been saved in /root/.ssh/id_rsa.pub.
+The key fingerprint is:
+74:f6:49:d1:1b:6d:e5:4f:f8:1c:01:ea:42:1f:61:50 root@localhost.localdomain
+The key's randomart image is:
++--[ RSA 2048]----+
+|         .oE.o.oo|
+|          . o.oo+|
+|        ..oo. .=o|
+|       ..ooo...+o|
+|        S. oo   +|
+|          .      |
+|                 |
+|                 |
+|                 |
++-----------------+
+
+3) 생성된 파일 확인
+
+[root@localhost ~]# cd .ssh
+[root@localhost .ssh]# ls -l
+합계 8
+-rw-------. 1 root root 1671 2013-11-11 11:58 id_rsa        -> 개인키
+-rw-r--r--. 1 root root  408 2013-11-11 11:58 id_rsa.pub    -> 공개키
+
+4) 파일 접근 권한 설정
+
+[root@localhost .ssh]# chmod 600 *
+[root@localhost .ssh]# ls -l
+합계 8
+-rw-------. 1 root root 1671 2013-11-11 11:58 id_rsa
+-rw-------. 1 root root  408 2013-11-11 11:58 id_rsa.pub
+
+5) public key를 접속하고자하는 ssh서버에 업로드
+
+[root@localhost .ssh]# ssh root@192.168.46.100 'mkdir -p /root/.ssh'
+The authenticity of host '192.168.46.100 (192.168.46.100)' can't be established.
+RSA key fingerprint is a8:fe:bc:1f:7e:ca:ac:98:98:7a:92:d5:7e:d9:60:76.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added '192.168.46.100' (RSA) to the list of known hosts.
+
+[root@localhost .ssh]# scp id_rsa.pub root@192.168.46.100:/root/.ssh/authorized_keys
+<-- 클라이언트의 공개키를 서버에 authorized_keys 파일명으로 업로드
+
+root@192.168.46.100's password: 
+id_rsa.pub                                    100%  408     0.4KB/s   00:00    
+
+[root@localhost .ssh]# ssh root@192.168.46.100 'chmod 700 /root/.ssh'
+[root@localhost .ssh]# ssh root@192.168.46.100 'chmod 600 /root/.ssh/*'
+
+6) 패스워드 인증없이 원격서버에 직접 접속
+
+[root@localhost .ssh]# ssh 192.168.46.100
+Last login: Fri Nov  8 19:52:54 2013 from 192.168.46.1
+[root@localhost ~]
+
+
+
+
+
+
+
+
+=======================
+### 원격서버 접속 : VNC
+=======================
+
+; VNC Server 세팅
+
+
+# yum -y install tigervnc-server             
+; server 패키지 설치
+
+# vi /etc/sysconfig/vncservers               
+; 설정파일 편집
+
+VNCSERVERS="1:root 2:user1 3:user2" 
+VNCSERVERARGS[1]="-geometry 1280x1024"
+VNCSERVERARGS[2]="-geometry 1280x1024"         
+; vnc 사용할 계정명입력. root, user1, user2 3개의 계정이라 가정.
+~
+~
+:wq
+
+; VNC Server Password 설정
+
+
+# cd ~
+# mkdir .vnc
+# cd .vnc
+# vncpasswd
+# su - user1
+$ cd ~
+$ mkdir .vnc
+$ cd vnc
+$ vncpasswd
+
+; Default Window Desktop Manager 설정
+
+# cp /etc/X11/xinit/xinitrc ~/xstartup
+# su - user1
+$ cp /etc/X11/xinit/xinitrc .
+
+                                 
+## VNC Server 서비스 restart
+
+# service vncserver restart
+
+# ps -ef | grep vnc                           
+; vnc 사용 port # 확인
+
+
+; 방화벽 설정
+# vi /etc/sysconfig/iptables               \
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 5900:5910 -j ACCEPT      
+; vnc 사용포트 개방
+
+~
+~
+:wq
+
+# service iptables restart                     ; 방화벽 설정값 적용
+
+
+## VNC Client  세팅
+
+# yum -y install tigervnc                      ; client 패키지 설치
+
+# vncviewer 192.168.0.2:1                      ; 서버ip입력하여 원격접속시도
+                                             
+; VNC는 기본적으로 5900 포트를 이용하게 됨.
+; VNC Server 설정 중 VNCSERVER="1:root 2:vncuser" 의 의미는 root 계정은 5901 포트를,
+; user1 계정은 5902포트, user2는 5903 포트를 사용한다는 것을 뜻함.
+; 5900 포트에 계정별 할당된 번호를 더해준 포트로 접속 해야함.
+
+; Trouble Shooting
+[문제]
+; vncviewer 실행시 다음의 메시지 출력
+
+# vncviewer 192.168.0.20:1
+
+TigerVNC Viewer for X version 1.1.0 - built Feb  4 2014 05:19:40
+Copyright (C) 1999-2011 TigerVNC Team and many others (see README.txt)
+See http://www.tigervnc.org for information on TigerVNC.
+
+Wed Mar 12 14:38:40 2014
+ main:        unable connect to socket: Connection refused (111)
+
+[Solution]
+localhost.localdomain:1 인 loopback 에게만 listening되도록 되어있음.
+# vi /etc/sysconfig/vncservers 
+VNCSERVERARGS[1]="-geometry 800x600 -nolisten tcp -localhost"
+;              => "-geometry 800x600" 으로 수정 !!
+
+~
+~
+:wq
+
+# service vncserver restart
+
+
+[문제]
+# vncviewer 192.168.0.20:2
+
+TigerVNC Viewer for X version 1.1.0 - built Feb  4 2014 05:19:40
+Copyright (C) 1999-2011 TigerVNC Team and many others (see README.txt)
+See http://www.tigervnc.org for information on TigerVNC.
+
+Wed Mar 12 15:01:01 2014
+ main:        unable connect to socket: No route to host (113)
+
+[Solution]
+방화벽 
+
+[Windows Client]
+Winvnc 다운로드 및 설치 !!
+
+
+
+
+
+
+
+
+
+
+
+
+
+

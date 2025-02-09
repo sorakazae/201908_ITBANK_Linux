@@ -1,0 +1,62 @@
+php ->4.4.x, 4.3.x 
+httpd ->2.0.x 대역
+mysql ->4.1.x 대역
+
+웹하드 URL
+http://www2.phpschool.com/gnuboard4/bbs/board.php?bo_table=download&wr_id=10995&sca=&sfl=wr_subject%7C%7Cwr_content&stx=shade&sop=and
+
+1. www.phpschool.com -> 다운로드 -> 검색어 : shade webhard
+2. system-config-packages ->웹서버 체크 -> 자세한 정보 ->php-mysql -> mysql 데이터베이스를 사용하는 php 응용프로그렘들에 사용되는 모듈 체크
+MYSQL 체크 -> 자세한 정보 ->mysql-server-mysql 서버와 관련 파일들 체크 -> 업데이트 ->시디 번갈아 가면서 설치..
+3. service httpd start -> http://localhost
+   service mysqld start 
+system-config-services ->httpd, mysqld 저장 - >다시 시작
+4. 웹서버 ->/var/www/html 홈디렉토리
+shade webhard -> /var/www/html 홈디렉토리에 복사
+tar xfz shade_webhard... 압축해제
+
+mv shade_webhard webhard
+cd webhard
+5. mysql을이용해서 webhard db 생성
+#mysql
+mysql>create database webhard;
+mysql > show databases;
+mysql>quit
+6. DB.TXT 수정 auto_increment->자동증가
+gedit DB.TXT
+ctrl + F ->찾기 ->auto_increment ->default'' 삭제-> 저장
+DB.TXT  파일을 이용해서 webhard DB에 각 테이블을 생성
+#mysql -u root -p1234 webhard < DB.TXT->webhard DB에 db.txt를 이용해서 테이블을 생성 
+7. 테이블 생성 확인 
+#mysql -u root -p
+mysql> show databases;
+mysql>use webhard; ->사용할 DB 선택
+mysql> show tables;
+8. gedit include/dbconnect.php
+$db_host = "localhost"; // mysql host
+$db_user = "root"; // mysql username
+$db_pass = ""; // mysql password
+$db_name = "webhard"; // mysql db name
+gedit include/config.php
+web_url : http://192.168.100.150/webhard
+web_path : "/webhard"
+dir_doc : /var/www/html/webhard"
+dir_home :/public_webhard"
+설정 후 저장
+공용 저장 폴더 : 
+mkdir /public_webhard
+chmod 707 /public_webhard
+9 url 접속 확인
+http://192.168.100.150/webhard
+10.한글 깨짐 현상 설정..
+gedit /etc/httpd/conf/httpd.conf
+검색어 ; AdddefaultCharset -UTF-8 ->EUC-KR 로 변경	
+service httpd restart
+http://192.168.100.150/webahrd/backoffice 아이디 : admin 암호 : shade -> 관리자 계정 url
+사용자 관리 -> 사용자 등록 ->test 아이디 등록.. -> 로그아웃
+http://192.168.100.150/webhard/ 일반 사용자 게정 로그인
+업로드 ->
+mysql>use webhard
+update webhard_backoffice_user set pass=password('1234') 
+where id='admin';
+

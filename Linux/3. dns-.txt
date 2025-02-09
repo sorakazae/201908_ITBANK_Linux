@@ -1,0 +1,868 @@
+
+@@ DNS(Domain Name System) Service
+
+-> IP 주소를 사용자가 이해하기 쉬운 영역별로 나뉘어져 있는
+   이름 주소 형식으로 해석(변환)해 주는 인터넷에 있어서
+   핵심적이라 할 수 있는 서비스.
+
+-> 도메인 이름은 영문자(a-z), 숫자(0-9), 특수문자(-) 포함하여
+   37개의 문자들로 구성할 수 있음.
+   대소문자의 구분은 없으며 특수문자는 처음과 끝에는 올 수 없음.
+   ip 주소와 마찬가지로 인터넷상에서 중복된 이름은 허락되지 않음.
+
+-> 도메인 이름은 "."(dot)으로 구분된 레이블로 구조화된 이름을 표시함.
+   즉 루트 도메인에서부터 호스트에 이르는 경로상의 각 계층을
+   모두 표시함으로써 도메인 네임 공간상에서의 그 위치를 표시하게 됨.
+   www.naver.com
+
+-> FQDN(Fully Qualified Domain Name)은 www.naver.com. 과 같이
+   도메인이름을 루트 도메인부터 전체 이름의 표기를 지칭함. 
+
+-> 분산된 구조의 도메인 데이터베이스가 만들어 지는데 이의 효율적인
+   DB구성과 관리를 위해 위임(Delegation)을 적용하게 됨.
+
+-> 루트 도메인은 최상위 도메인에게 해당 도메인 관리를 위힘하며 최상위
+   도메인은 다시 2차 도메인을 생성하여 그 관리를 위힘하게 됨.
+   이러한 위임에 있어서 중요한 것은 영역(zone) 개념임.
+
+-> 이때 영역이란 상위레벨 도메인으로부터 위임받은 도메인을
+   기준으로 하위 노드를 생성, 관리하고 다시 서브도메인을
+   생성 임임 및 관리할 수 있는 영역을 의미 함.
+
+-> 각 도메인 관리자는 해당 도메인의 하위 영역을 독자적으로
+   관리하는 권한까지 갖게 됨. 즉 위임은 새로운 도메인 네임의
+   생성, 유지, 삭제 등의 일정한 영역의 도메인에 대한 관리
+   권한까지 위임하는것을 의미.
+
+! DNS의 3가지 기능이 유기적으로 연동되어 동작하게 됨.
+
+-> 도메인 네임공간 및 리소스 레코드
+-> 네임서버
+-> 리졸버
+
+! 도메인 네임공간
+
+-> 인터넷공간에서 사용되는 도메인 네임의 계층적 구조 공간을 의미.
+-> 도메인 네임의 분배/할당은 도메인네임 할당기관인인
+   (IANA, ICANN, KISA)을 통해서 쳬계적으로 관리됨.
+-> Tree 형태의 계층적 구조.
+
+Root Domain     (.)
+                 |  \     \
+Top Level       com   org     kr
+                 |       \      \
+Second Level    google   kernel   co
+                 /  \      \        \
+Subdomain      www   ftp   www     yahoo
+                                     |
+                                    www
+
+<Top Level Domain>
+
+gTLD(Generic Top Level Domain) -> .aero .biz .com .info .name .net .org .gov .edu
+ccTLD(Contry Code Top Level Domain) -> .kr .cn .us
+특수도메인 -> .arpa
+
+
+! 리소스 레코드(Resource Record)
+
+-> 하나의 도메인 네임이 갖는 속성 정보를 지정하는 수단.
+
+
+! 네임 서버(Name Server)
+
+-> 도메인의 정보를 소유하고 클라이언트에게 질의에 대한 응답 수행.
+-> DNS 서버라고도 하며 자신이 소유한 도메인 존의 정보에 대해서만
+   응답하게 되므로 Iterative DNS 서버라고도 함.
+-> 특정영역에 대해 관리권한이 위임된 서버이므로 Authoritative DNS 또는
+   Authoritative 네임서버라고도 함.
+
+
+! 리졸버(Resolver)
+
+-> 네임서버에 의해 구성된 도메인의 데이터베이스를 검색하는 역할.
+-> 응용프로그램과 도메인네임 시스템간의 인터페이스 역할을 담당.
+-> 요청받은 리소스 레코드를 갖고있는 도메인 네임 시스템을 찾아서
+   해당 레코드 정보를 응답으로 되돌려주는 기능 수행.
+-> 도메인네임 시스템의 최상위 위치인 루트네임서버(Root Name Server)의
+   IP주소 정보를 자신의 환경 구성 파일로 갖고 있음.
+-> 빈번하게 반복되는 동일한 DNS 질의에 대해 일정시간동안 자신의 Cache에
+   저장하여 빠른 응답 처리 수행. 이때의 캐싱은 TTL 시간동안만 가능.
+
+
+! 스터브 리졸버(Stub Resolver)
+
+-> 호스트내의 응용프로그램으로부터 네임 질의 요청이 있는 경우 시스템에
+   지정된 리졸버 역할의 네임서버로 DNS 질의를 요청.
+-> 리졸버는 스터브리졸버를 대신하여 요청된 레코드를 전체 도메인에서
+   파악하여 그 결과를 스터브리졸버에게 전달하게 됨.
+-> 항상 DNS 요청을 처리할 수 있는 리졸버 서버의 IP 주소를 지정해야 함.
+-> 리졸버 서버의 IP 주소를 설정하는 구성 파일은 /etc/resolv.conf 임.
+
+
+! Domain Name System 동작과정
+
+
+
+
+
+
+
+
+
+
+
+
+! 네임서버의 유형
+
+-> DNS 처리를 위해서는 반드시 한대 이상의 네임서버가 존재해야 함.
+-> 네임서버는 역할에 따라 주 네임서버, 보조 네임서버, 캐싱 네임서버로 나뉨
+
+1) Primary Name Server -> 1차 네임서버라하며 영역에 대한 모든
+   데이터를 가지고 있기 때문에 한 영역에 대한 모든 권한을
+   가지고 있는 중요한 서버임.
+2) Secondary Name Server -> 2차 네임서버라하며 1차 네임서버가
+   다운되었을 경우 fail-over 용도로 동작함. 또한 로드밸런싱도
+   가능함.
+3) Cache Name Server -> 도메인에 대한 직접적인 레코드 관리는
+   하지 않으며 요청발생시 전체 네임구조를 파악 후 Stub Resolver에게
+   서비스를 하게 됨.
+
+
+! 네임서버 관련 파일
+
+1) /etc/host.conf
+-> 어떤 순서에 따라 호스트 이름이 IP주소로 변환될 것인지를 지정.
+order hosts,bind -> 호스트이름을 IP로 변환할때 /etc/hosts파일을 먼저
+                    이용하여 변환하고, DNS 리졸버를 참조함.
+multi {on|off} -> /etc/hosts 에 존재하는 호스트들에 대한 여러개의 ip 주소를
+                  가질 수 있는지 여부.
+
+2) /etc/hosts
+-> IP 주소와 호스트 이름의 관계를 설정. 로컬 시스템에서만 유효하게 됨.
+
+3) /etc/resolv.conf
+-> 호스트가 사용할 DNS서버 주소를 설정
+-> 자신의 호스트가 DNS서버라면 자신의 IP주소를 입력하면 됨.
+
+4) /etc/nsswitch.conf
+
+
+! BIND 패키지
+
+1) bind       -> bind 소프트웨어 패키지.
+2) bind-utils 
+-> DNS를 질의하고 인터넷 호스트에 대한 정보를 찾는 유틸리티모음.
+3) bind-libs  
+-> bind 서버 패키지와 utils 패키지에 의해 사용되는 라이브러리.
+4) caching-nameserver 
+-> bind 환경 설정모음 패키지. bind 패키지에 포함되어있음.
+5) bind-chroot-> bind에서 로컬 보안을 위한 패키지.
+
+
+! BIND 패키지 설치/실행
+
+# rpm -qa | grep bind
+# yum install bind
+
+# service named {start|stop|restart|status}
+# chkconfig named on
+
+
+! BIND 환경 설정 파일
+
+/etc/sysconfig/named-> chroot 적용할 네임서버 루트 디렉토리를 지정하는 파일
+
+/etc/init.d/named   -> 네임서버 데몬을 실행하게 해 주는 스크립트 파일
+
+/etc/rndc.key       -> 공유키 설정 파일
+
+/etc/rndc.conf      -> rndc 설정 파일
+
+/etc/named.conf     -> bind 환경 설정 파일
+
+/var/named/*.zone   -> 영역 설정되어있는 존파일의 위치 디렉토리
+                      chroot 적용시에는 /var/named/chroot/var/named 가 됨.
+
+/etc/named.rfc1912.zones -> /etc/named.conf 설정파일의 확장개념이며
+                            외부의 설정 파일을 포함하고자 할때 사용.
+
+1) /etc/named.conf
+
+listen-on port 53 { 127.0.0.1; };
+-> 네임서버의 포트번호와 접근할 수 있는 ip를 설정하는 지시자임.
+   외부로부터의 접근을 허용하려면 'any'로 설정값 변경 필요 함.
+
+directory       "/var/named";
+-> zone 파일의 기본 저장 디렉토리 지정.
+
+dump-file       "/var/named/data/cache_dump.db";
+-> 네임서버 정보 변경시 변경 정보 저장
+
+statistics-file "/var/named/data/named_stats.txt";
+-> 네임서버 통계 자료 저장
+
+memstatistics-file "/var/named/data/named_mem_stats.txt";
+-> 메모리 상태 정보 저장
+
+allow-query     { localhost; };
+-> 네임서버 쿼리를 허용할 ip, 또는 ip 대역 또는 'any'을 설정하는 지시자.
+
+recursion yes;
+-> 외부에서 현재의 네임서버를 지정하여 사용할수있게 하는지 여부 설정.
+
+dnssec-enable yes;
+dnssec-validation yes;
+dnssec-lookaside auto;
+
+bindkeys-file "/etc/named.iscdlv.key";
+
+managed-keys-directory "/var/named/dynamic";
+
+logging 
+-> 네임서버 디버깅시 참고할 수 있는 로그파일 생성위치 지정.
+
+zone "." IN {
+        type hint;
+        file "named.ca";
+};
+-> root 도메인에 대한 존 설정. type 설정에 hint는 루트도메인을
+   지정한다는 의미. 루트도메인 정의파일은 ftp://ftp.internic.net/domain
+   에서 다운로드 가능함.
+
+include "/etc/named.rfc1912.zones";
+-> 외부 설정 파일 포함.
+
+include "/etc/named.root.key";
+-> 인증키 관련 
+
+2) /etc/named.rfc1912.zones
+-> /etc/named.conf 환경설정 파일의 확장개념으로서 외부 설정파일을 포함
+   하고자 할때 사용. 내용은 zone 설정을 정의하는 용도로 사용됨
+
+<존 선언 구문>
+zone "zone_name" IN {
+	type {hint|master|slave};
+	file "file_name.zone";
+	allow-update { none };
+	allow-transfer { none };
+}
+-> 기본 설정 포멧이며 zone_name은 실제 사용할 domain name을 기입하며,
+   type의 종류는 hint: 루트 도메인을 지정, master: 1차 네임서버,
+   slave: 2차네임서버를 의미함.
+   file은 해당 zone을 설정할 /var/named에 생성할 임의의 실제 파일명을 기입함.
+
+
+3) /var/named/*.zone
+-> 특정 도메인에 대한 영역 설정 파일이 존재함.
+
+<영역 설정 구문>
+$TTL 1D
+@       IN SOA  @ rname.invalid. (
+                                        0       ; serial
+                                        1D      ; refresh
+                                        1H      ; retry
+                                        1W      ; expire
+                                        3H )    ; minimum
+        NS      @
+        A       127.0.0.1
+        AAAA    ::1
+
+$TTL 1D -> 다른 서버에서 자신의 정보를 가져갔을때 캐시에
+           그 정보가 얼마나 오랫동안 머무를것인지에 대한 값.
+@       -> origin 도메인을 뜻함. @ 대신 실제 도메인명을 사용할 수 있음.
+IN      -> IN(Internet)은 네트워크 어드레스 주소 클래스를 의미 함.
+SOA     -> Start Of Authority 로서 해당 도메인에 대해 네임서버가
+           모든 리소스레코드 권한을 갖는다는것을 선언.
+@       -> 1차 네임서버주소를 지정.
+rname.invalid. -> 관리자 메일주소 지정함. 이메일주소에는 @를 사용할 수 없음.
+           대신 이메일주소와 도메인을 구분하기 위해 @대신 .을 사용 함.
+serial  -> 네임서버의 데이터버전을 나타냄. 네임서버의 영역 설정파일이 
+           수정하였다면 serial 번호를 증가시켜줘야 함.
+refresh -> secondary 네임서버가 primary 네임서버에게 새롭게 업데이트된
+           정보가 있는지 요청할때까지의 시간.
+           일반적으로 21600(6시간)~43200(12시간)의 값으로 설정.
+retry   -> secondary와 primary와 연결이 되지 않을 경우 재 시도할때까지의
+           대기 시간. 일반적으로 1800(30분)~3600(1시간)으로 설정.
+expire  -> secondary가 정해진 시간동안 primary에 접속하지 못하게 되면
+           이전의 정보가 의미 없는것으로 간주하여 이를 파기하게 됨.
+           일반적으로 604800(1주)~1209600(2주)로 설정 함.
+minimum -> 맨첫줄의 TTL과 같은 의미임. 유효값의 범위는 604800~1209600 임.
+
+< Resource Records >
+SOA   -> Start Of Authority (권한의 시작)
+NS    -> Name Server 지정
+A     -> 특정 서버와 도메인에 IP Address 부여
+MX    -> Mail Exchanger. 메일서버 설정시 필요.
+CNAME -> Canonical Name(별칭)
+PTR   -> Pointer. 리버스 존에서 사용하는 레코드로서 ip 주소를  도메인명으로
+         나올 수 있도록 하는 레코드. 
+
+
+<zone 파일 생성 예> -> 정방향
+
+# vi /etc/named.rfc1912.zones  ; 파일 마지막에 다음을 추가
+...........
+zone "naver.com" IN{
+   type master;
+   file "naver.com.zone";
+   allow-update {none;};
+};
+
+~
+~
+:wq
+
+
+# vi /var/named/naver.com.zone
+
+@ IN SOA  ns.naver.com.  root.naver.com. ( 
+                                            0      ; serival
+                                           1D      ; refresh
+                                           1H      ; retry
+                                           1W      ; expire
+                                           3H )    ; minimum
+
+       NS     ns.naver.com.
+ns     A      192.168.0.100
+www.g  A      192.168.0.2        ; 웹서버 또는 www.g.naver.com. 으로 해도 됨.
+www.g  A      192.168.0.3        ; 라운드 로빈으로 부하분산
+www    CNAME  www.g.naver.com.
+ftp    A      192.168.0.4
+mail   A      192.168.0.5
+       MX 10  mail.naver.com.     ; mailserver는 MX레코드를 작성해야함
+~
+~
+:wq
+
+# service named restart
+
+! 검사/ 확인
+
+c:\>nslookup
+> server 192.168.0.100
+> www.naver.com
+> set type=MX
+> mail.naver.com
+
+<zone 파일 생성 예> -> 역방향
+
+# vi /etc/named.rfc1912xxx ; 마지막에 추가
+
+zone  "42.168.192.in-addr.arpa" IN {         
+	type master;
+	file "naver.rev";
+	allow-update {none;};
+};
+~
+~
+:wq
+
+# vi /var/named/naver.rev
+
+$TTL 0 
+@	IN SOA ns1.naver.com.  root.naver.com. (
+					0
+					1D
+					3H
+					1W
+					0 )
+	NS	ns1.naver.com.
+ns1	A	192.168.0.100
+100	PTR	ns1.naver.com.
+3	PTR	www.naver.com.
+4	PTR	ftp.naver.com.
+~
+~
+:wq
+
+# service named restart
+
+
+! 검사/ 확인
+
+c:\>nslookup
+> server 192.168.0.100
+> 192.168.0.2
+
+
+<Master - Slave 구성>
+
+-> slave dns는 master 서버의 ip와 권한을 갖으면 됨.
+-> 장애복구 및 부하분산의 목적으로 구축 함.
+-> master down시 slaver 서버로 서비스가 이루어 지는지 확인.
+-> 설치 완료 후 wireshark로 패킷 경로 확인.
+
+-> 멀티서버 구성 후 bind 패키지 설치.
+-> VMware는 host-only 또는 bridge 로 설정.
+
+-> wireshark에서 호스트 vmnet1을 잡고 모니터링.
+-> 방화벽 비활성화 또는 53번 포트 설정.
+
+-> 2차 dns는 마스터서버의 ip와 권한을 갖고 있으면 됨.
+
+-> ip 구성
+
+master server : 172.16.10.10 / 255.255.255.0
+slave server  : 172.16.10.10 / 255.255.255.0
+
+# service network restart
+
+
+! 마스터서버 설정
+
+# vi /etc/named.conf   
+
+linten-on port 53 { 172.0.0.1; };  ->     any로 변경
+allow-query  { localhost;  };      ->     any로 변경
+~
+~
+:wq
+
+# vi /etc/named.rfc1912.zone       -> 마지막에 다음 추가
+zone "naver.com" IN {
+	type master;
+	file "naver.zone";
+	allow-transfer { 172.16.10.40; 172.16.10.0/24;};
+~
+~
+:wq
+
+# vi /var/named/naver.zone
+$TTL 0
+@	IN SOA ns.naver.com  root.naver.com. (        
+					        1      
+					        60 
+ 						30
+						604800 
+						0);   
+ns		A	172.16.10.10
+naver.com.	NS	ns.naver.com.
+www		A	172.16.10.100
+~
+~
+:wq
+
+
+
+# chown root:named naver.zone  -> 소유권 등 권한 설정
+# chmod 660 naver.zone
+
+
+! slave 서버 설정
+
+# vi /etc/named.conf   
+
+linten-on port 53 { 172.0.0.1; };  ->     any로 변경
+allow-query  { localhost;  };      ->     any로 변경
+~
+~
+:wq
+
+# vi /etc/named.rfc1912.zones
+
+zone "naver.com" IN {
+	type slave;
+	file "slaves/slave.naver.zone";
+	masters { 172.16.10.10; };      -> 보조서버는 주서버를 알아야 함.
+};
+~
+~
+:wq
+
+
+/var/named
+ls -ld /var/named/   -> 쓰기권한이 없으므로 slaves디렉토리에 저장하도록 함.
+
+# service named start
+
+-> 60초 이후에 /var/named/slaves/slave.naver.zone 내용확인.
+-> 주서버에서 가져온 내용을 확인할 수 있음.
+
+
+! wireshark에서 확인
+
+ARP -> 맥어드레스 알아옴. 보조서버가 주서버에게 질의하여
+       맥주소를 주서버가 알려주게됨.
+DNS -> SOA 시리얼 넘버 비교하기위함.
+
+SYN SYN/ACK ACK -> TCP연결.
+-> 보조서버가 주서버에게 AXFR 을 통해서 전체내용을 요청하게됨.
+-> 주서버에서 내용 변경되었을경우 리플레시되었을때
+   IXFR 파일로부터 변경내용만 가져오게 됨.
+
+
+
+<검사/확인>
+-> 주서버에서 /var/named/naver.zone 내용 수정후 보조서버 확인.
+
+# vi /var/named/naver.zone
+-> 내용 변경 후 serial도 변경.
+-> 내용추가 및 수정후 시리얼넘버를 반드시 변경시켜줘야함.
+-> slave서버 자신의 시리얼과 비교후 변경됨을 알고 reflish 수행하게 됨.
+
+# service named reload
+
+-> wireshark 내용에서 IXFR요청 후 변경내용가져오면
+   최신정보로 갱신되었음을 확인할 수 있음.
+
+<XP cmd 창에서>
+
+master server network down 시킨 후
+
+c:\> nslookup
+> server slave_IP
+> www.naver.com
+
+
+<검사/확인>
+
+-> snu.ac.kr을 마스터서버로 하고 로컬 서버를 슬래이브 서버로
+   세팅하여 가져와 지는지 확인.
+-> master-transfer가 any로 열려있으면 가져올 수 있음.
+
+# dig ns1.snu.ac.kr 
+-> snu.ac.kr 1차 dns서버 ip를 확인하고 슬래이브 dns세팅.
+
+zone "snu.ac.kr" IN{
+file "slaves/snu.zone";
+master {146.46.18.1}
+
+-> 제대로 받아왔으면 slaves/snu.zone파일을 확인하면되며
+   그렇지 않으면 해당 dns서버의 보안설정에 의해 deny될 수도 있음.
+-> wireshark에서 refused메시지 에서 성공/실패메시지 확인할 수 있음.
+
+
+<주서버에서 역방향 세팅>
+
+# vi /etc/named.rfc1912.zones
+zone "10.16.172.in-addr.arpa" IN {
+	type master;
+	file "naver.rev";
+};
+~
+~
+:wq
+
+# cp naver.zone naver.rev 
+# vi naver.rev
+$TTL 0
+@	IN SOA ns1.naver.com. root.naver.com. (
+						2013100800
+					        60
+ 						30
+						604800
+						0);
+
+		NS	ns1.naver.com.
+ns1		A	172.16.10.10
+10		PTR	ns1.naver.com.            
+100		PTR	www.naver.com.
+~
+~
+:wq
+
+# chown root:named naver.rev   ; 권한 부여
+
+# service named restart
+
+
+<보조서버에서 역방향 세팅>
+
+# vi /etc/named/named.rfc1912.zones
+
+zone "10.16.172.in-addr.arpa" IN {
+	type slave;
+	file "slaves/slave.naver.rev"
+	masters ( 172.16.10.10; };
+};
+~
+~
+:wq
+
+
+<검사/확인>
+
+-> winxp에서 nslookup으로 확인
+-> 주서버 다운시 보조서버에서 잘 되는 지확인
+
+
+
+-------------------
+##### DNS 위임
+-------------------
+
+-> dns구조가 위임 구조로 되어있음.
+   위임은 하나의 영역을 2개 이상으로 나누는 것임.
+
+<위임하는 영역에서...>
+
+# vi /var/named/naver.zone
+
+naver.com. 	 NS
+ns1		 A	172.16.10.30
+blog.naver.com.  NS     ns1.blog
+ns1.blog	 A      172.16.10.40 -> 새로운 영역이 생성. 
+www		 A	172.
+ftp		 A	172.16.10.110
+
+~
+~
+:wq
+
+# etc/named.rfc1912.zones
+zone "naver.com"
+
+# service named restart
+
+
+<위임받는 영역에서...>
+
+#vi named.rfc
+zone "blog.naver.com" IN {
+	type master;
+	file "blog.zone";
+};
+
+~
+~
+:wq
+
+# cd /var/named
+# cp nmaed.localhost blog.zone
+# chown root:named blog.zone
+# vi blog.zone
+$TTL 0
+@	IN SOA blog.naver.com.  root.blog.naver.com. (
+			0
+			1D
+			1h
+			1W
+			0)
+	NS 	ns1
+ns1	A	172.16.10.40 
+www	A	172.16.10.200
+ftp	A	172.16.10.201
+mail	A	172.16.10.202
+@	MX  10	mail
+~
+~
+:wq
+
+# service named restart
+
+
+<검사/조사>
+
+-> winxp에서 nslookup으로 동작상태 확인.
+
+
+
+
+
+
+==========================
+### 사설 root DNS 구축 ###
+==========================
+
+## 방화벽 Port 53 설정 또는 사용하지 않음으로 설정.
+
+### 시나리오 :
+
+정방향만 완료 확인 후 역방향 테스트하기로 함.
+
+
+                                (.)Root DNS
+                                /      \
+
+                  DNS2: 리졸버 역할     COM DNS
+                  (root hint 수정)           \
+                            /                naver.com DNS
+                    Client (Window)           /    |    \
+                                            WWW   mail    FTP
+
+
+## (.)root dns는 com dns에게 위임하고 com dns는 naver.com dns에게 위임.
+ 
+## 4대의 서버 준비 : 모두 bind 설치 
+# yum -y install bind
+
+## 1대의 WinXP 준비, 패킷 경로확인을 위한 wireshark 설치
+
+## 사설 IP 설정 : static으로 host-only 또는 Bridged로 세팅.
+1)root        172.16.10.10 / 255.255.255.0
+2)com         172.16.10.20 / 255.255.255.0
+3)naver       172.16.10.30 / 255.255.255.0
+4)resolver    172.16.10.40 / 255.255.255.0
+
+# vi /etc/named.conf
+listen-on port 53 { any; };
+allow-query     { any; };
+dnssec-enable no;
+dnssec-validation no;
+//      dnssec-lookaside auto;
+
+### DNSSEC (DNS Security Extensions) :
+
+-> DNS 프로토콜은 데이터 위/변조 침해공격에 취약함.
+-> 이는 캐싱 네임서버 또는 클라이언트가 받은 데이터 오류나
+   변조의 확인 절차가 없어 발생하게 됨.
+-> 이런 DNS 보안 문제를 극복하기위해 비대칭키 보안 방식인
+   DNSSEC를 적용하게 되었음.
+
+### 1)root 서버에서
+-------------------
+
+# vi /etc/named.rfc1912.zones  ; 다음을 추가
+
+zone "." IN {
+        type master;
+        file "root.zone";
+        allow-update { none; };
+~
+~
+:wq
+
+# cd /var/named
+# touch root.zone
+# chgrp named root.zone
+# vi root.zone
+
+$TTL 0
+@       IN SOA  . root.naver.com. (
+                                        1       ; serial
+                                        20      ; refresh
+                                        10      ; retry
+                                        1W      ; expire
+                                        0 )     ; minimum
+        IN NS   .
+.       IN A    172.16.10.10
+com.    IN NS   com.            -> 위임하는 부분.
+com.    IN A    172.16.10.20    -> 위임하는 부분.
+
+
+# service named restart
+
+
+### 2) com서버에서
+------------------
+
+# vi /etc/named.rfc1912.zones
+
+zone "com" IN {
+        type master;
+        file "com.zone";
+        allow-update { none; };
+};
+~
+~
+:wq
+
+# cd /var/named
+# cp named.localhost com.zone
+# chgrp named com.zone
+# vi com.zone
+
+$TTL 0
+@       IN SOA  com. root.naver.com. (
+                                        0       ; serial
+                                        60      ; refresh
+                                        30      ; retry
+                                        1W      ; expire
+                                        0 )     ; minimum
+                 NS   com.
+com.             A    172.16.10.20
+naver.com.       NS   naver.com.    -> 위임하는 부분.
+naver.com.       A    172.16.10.30  -> 위임하는 부분.
+~
+~
+:wq
+
+# service named restart
+
+### 3) naver.com 에서
+
+vi /etc/named.rfc1912.zones
+
+zone "naver.com" IN {
+        type master;
+        file "naver.zone";
+        allow-update { none; };
+};
+~
+~
+:wq
+
+# cd /var/named
+# cp named.localhost naver.zone
+# chgrp named naver.zone
+
+# vi naver.zone
+
+$TTL 0
+@       IN SOA  ns1.naver.com. root.naver.com. (
+                                        3       ; serial
+                                        20      ; refresh
+                                        10      ; retry
+                                        1W      ; expire
+                                        0 )     ; minimum
+        NS      ns1.naver.com.
+ns1     A       172.16.10.30
+www.g   A       172.16.10.33
+www.g   A       172.16.10.34
+www     CNAME   www.g.naver.com.
+ftp     A       172.16.10.35
+mail    A       172.16.10.36
+@       MX 10   mail.naver.com.
+~
+~
+:wq                -> 더이상 위임시킬것은 없으므로 저장만 수행.
+
+# service named start
+
+
+### 4) 리졸버
+------------
+
+# vi /var/named/named.ca  -> hint 정보 수정. root 서버 정보만 남기고 삭제.
+
+;; ANSWER SECTION:
+.                       518400  IN      NS      .
+;; ADDITIONAL SECTION:
+.                       3600000 IN      A       172.16.10.10
+~
+~
+:wq
+
+# service named restart
+
+
+### 확인은 Wireshark로 vmnet1 포트를 잡고 쿼리와 패킷 흐름 모니터링
+
+
+
+------------------------------------------
+#### 2개 이상의 도메인을 하나의 DNS에서 관리
+------------------------------------------
+
+# vi /etc/named.rfc1912.zones   ; 해당 도메인 에 대한 forward zone 정보을 마지막에 추가
+
+# vi /var/named/new_zone_file ; forward zone 파일 생성 하면 OK.
+
+
+### 방화벽 세팅
+---------------
+
+-A INPUT -p udp -m udp --sport 53 -j ACCEPT
+-A INPUT -p udp -m udp --dport 53 -j ACCEPT
+-A OUTPUT -p udp -m udp --dport 53 -j ACCEPT
+-A OUTPUT -p udp -m udp --sport 53 -j ACCEPT
+
+
+
+
+
+
+
+
+

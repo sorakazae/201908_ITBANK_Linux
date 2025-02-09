@@ -1,0 +1,151 @@
+Centos Server A
+eth0(공인 IP 대역 역활)-> Vmnet8
+IP 192.168.0.100 
+   255.255.255.0
+GW 192.168.0.2
+기본 DNS 168.126.63.1
+eth1 -> VMnet0(host-only)
+ip 10.1.1.1 -> 사설망의 게이트웨이 역활
+    255.255.255.0
+호스트 os -> win2008 server ->Vmnet8 
+192.168.0.1
+255.255.0.0
+
+사내망
+Centos Server B(Vmnet0(host-only) ->FTP 서버 역활(vsFTP 서버)
+ IP 10.1.1.20 
+   255.255.255.0
+GW 10.1.1.1
+기본DNS 192.168.0.2
+보조DNS 168.126.63.1
+
+WIN2003 서버 Vmnet0(host-only)  
+ IP 10.1.1.10 
+   255.255.255.0
+GW 10.1.1.1
+기본 DNS 168.126.63.1
+
+사설네트워크의 컴퓨터들이 외부의 인터넷을 사용할 수 있도록 매스커레이드를 설정해 주도록 하자. 주로  iptables 명령어를 이용하게 될 것이다.
+1.
+iptables -F FORWARD
+iptables  -P FORWARD DROP
+앞의 명렁어는 FORWARD 체인을 초기화 한 후 , FORWARD의 기본 정책을 DROP으로 설정한다는 의미이다. 
+
+2. vi /etc/sysctl.conf
+net.ipv4.ip_forward = 0 ->1
+이렇게 수정해주면 컴퓨터가 재부팅 되어도 ip_forward의 값이 항상 1(On)으로 설정된다.
+
+3.
+다음 명령을 입력해서 지금 바로 IP 포워딩이 될 수 있도록 설정한다. 아무런 메세지가 없으면 잘 설정된 것이다.
+echo "1" > /proc/sys/net/ipv4/ip_forward
+4. 
+내부의 사설 네트워크와 연결되는 장치인 eth1과 외부의 인터넷과 연결되는 장치인 eth0에 모든 패킷이 통과하도록 설정한다.
+iptables -A FORWARD -o <내부 사설 네트워크와 연결되는 네트워크 장치>
+-j ACCEPT
+iptables -A FORWARD -o eth1 -j ACCEPT
+iptables -A FORWARD -o <외부 인터넷과  연결되는 네트워크 장치>
+-j ACCEPT
+iptables -A FORWARD -o eth0 -j ACCEPT
+5. 외부 인터넷으로 연결되는 장치인 eth0에 메스커레이드를 허가하도록 하자. 그러면 내부 " 사설 네트워크"와 연결되는 장치인 eth1과 연결된 모든 컴퓨터는 외부로 인터넷이 가능하도록 연결되는 것이다.
+
+iptables -t nat -A POSTROUTING -o <외부 인터넷과 연결되는 네트워크 장치> -j MASQUERADE
+
+iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+
+6 지금 까지의 내용을 저장한다.
+service iptables save
+
+7. lokkit 방화벽 명령어 
+신뢰할 수 있는 장치  eth1 체크
+위장장치		   eth1 체크
+
+이렇게 해서 사설 네트워크 내부에 있는 컴퓨터들은 게이트 웨이(방화벽 컴퓨터)의 eth1 장치(10.1.1.1)를 경유해서, 외부 인터넷과 연결된 장치 eth0(192.168.0.100)를 통해서 외부 인터넷으로 연결이 되도록 설정이 완료 되었다.	
+
+지금 구현한 매스커레이드는 ip공유기 부르는 장비의 대표적인 역할 중 한 가지다.
+
+9. 리눅스 서버  B
+ㄱ.yum -y install vsftpd
+ㄴ.lokkit을 이용해서 방화벽 해제
+ㄷ. /var/ftp 디렉토리에 보여줄 파일 하나 생성
+cd /var/ftp
+touch "10.1.1.20 FTP Server"
+ㄹ. service vsftpd start
+
+10 리눅스 서버  외부에서 공인 ip인 192.168.0.100으로 FTP 요청을 한다면 사설 네트워크 내부에 있는 FTP 서버(리눅스 서버 B)로 연결해 주도록 설정하자.
+iptables -t nat -A PREROUTING -p tcp -i <외부 네트워크 장치> --dport <포트번호> -j i --to < 내부의 사설  IP>
+
+iptables -t nat -A PREROUTING -p tcp -i eth0 --dport 21  -j DNAT --to 10.1.1.20
+
+iptables -t nat -A PREROUTING -p tcp -i eth0 --dport 80  -j DNAT --to 10.1.1.20
+11.service iptables save -> 
+11 방화벽을 실행해서 FTP 서버스를 허용하도록 설정한다. 
+
+12 알 FTP를 이용해서 접속해 본다.
+
+방화벽 설정 삭제
+iptables -F
+iptables -t nat -F
+nat 상태 확인
+service iptables status
+nat 상태 저장
+service iptables save
+다시 시작
+service iptables restart
+
+----------------------------------------------
+DHCP 서버 에서 작동
+1. 발급 IP 대역 10.1.1.100 10.1.150
+2. 라우터 : 10.1.1.1
+   DNS 192.168.0.2
+       168.126.63.1	
+ddns-update-style interim;
+ignore client-updates;
+
+subnet 10.1.1.0 netmask 255.255.255.0 {
+
+# --- default gateway
+        option routers                  10.1.1.1;
+        option subnet-mask              255.255.255.0;
+
+#       option nis-domain               "naver.vm";
+#       option domain-name              "naver.vm";
+
+        option domain-name-servers      192.168.0.2;
+
+        option time-offset              -18000; # Eastern Standard Time
+#       option ntp-servers              192.168.1.1;
+#       option netbios-name-servers     192.168.1.1;
+# --- Selects point-to-point node (default is hybrid). Don't change this unless
+# -- you understand Netbios very well
+#       option netbios-node-type 2;
+
+        range dynamic-bootp 10.1.1.100 10.1.1.150;
+        default-lease-time 21600;
+        max-lease-time 43200;
+
+        # we want the nameserver to appear at a fixed address
+        host ns {
+                next-server marvin.redhat.com;
+                hardware ethernet 12:34:56:78:AB:CD;
+                fixed-address 207.175.42.254;
+        }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

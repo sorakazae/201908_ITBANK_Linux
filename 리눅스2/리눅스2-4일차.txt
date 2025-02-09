@@ -1,0 +1,835 @@
+
+[ITBANK Andylec  주말 리눅스 2 과정]
+
+▣오늘의 수업내용(4일차)
+FTP 서버
+NFS 서버
+
+
+▣FTP Service
+File Transfer Protocol : 파일 전송 서비스
+
+
+☞FTP 서비스 이용 계정 종류
+1)시스템에 등록된 사용자
+adduser 로 추가하고 passwd 로 암호 설정을 해 준 계정
+자신의 홈디렉토리에 업로드와 다운로드 가능
+
+2)익명 계정(Anonymous)
+다수의 사용자들에게 자료를 공유하기 위해서 사용하는 계정
+업로드는 보통 금지되어 있다.
+접속시 사용자에는 anonymous 를 입력하고
+암호에는 보통 자신의 이메일을 입력한다.(빈 암호도 가능)
+
+
+▣FTP 서버 프로그램 : vsftpd
+
+☞vsftpd 특징
+1)UNIX 계열에서 사용할 수 있는 Free FTP 서버 프로그램
+2)Redhat 리눅스 계열에서 기본으로 채택 된 프로그램
+3)standalone, xinetd 지원
+4)전송 대역폭 조절 기능
+5)IP 제한 기능
+
+
+[first]
+#rpm  -qa  |  grep  vsftpd
+프로그램이 없으면 #yum  -y  install  vsftpd 로 설치해 준다.
+
+▷서버 데몬 : 
+/usr/sbin/vsftpd
+
+▷데몬관리 스크립트(서비스 시작, 종료 시키는 파일) : 
+#file  /etc/init.d/vsftpd
+/etc/init.d/vsftpd: Bourne-Again shell script text executable
+#
+
+
+#ll  /etc/init.d
+/etc/init.d 는   /etc/rc.d/init.d 의 링크 파일이다.
+
+#cat   /etc/init.d/vsftpd
+C 나 Java 의 switch 문 형식으로 되어 있어서 
+start 인자가 입력되면 데몬을 메모리에 로딩하고
+stop 인자가 입력되면 메모리에서 데몬을 내리는 형식으로 되어 있다.
+
+
+
+▷설정파일
+#file  /etc/vsftpd/vsftpd.conf
+/etc/vsftpd/vsftpd.conf: ASCII English text
+#
+
+▷사용자 접근제한 파일
+#cd  /etc/vsftpd
+#ls
+ftpusers   user_list
+(기본적으로 접속 불가능한 사용자 설정 파일)
+
+
+☞vsftpd.conf 의 주요 항목
+형식)
+변수이름=값
+--->변수 이름은 대소문자를 구분함
+--->값은 대소문자 구분 안 함
+--->변수이름과 값 사이에 공백이 있으면 안 됨
+
+
+anonymous_enable=YES
+anonymous 사용자의 접속 허용 여부 (default = YES)
+
+local_enable=YES
+로컬 계정 접속 허용 여부
+
+write_enable=YES
+write 명령어 허용 여부(업로드 가능 여부)
+
+anon_upload_enable=YES
+anonymous 사용자가 파일을 업로드 할 수 있는지 여부
+
+anon_mkdir_write_enable=YES
+anonymous 사용자의 디렉토리 생성 허용 여부
+
+xferlog_enable=YES
+파일 전송 로그를 남길 것인지 여부
+
+connect_from_port_20=YES
+데이터 전송 포트 지정
+
+xferlog_file=/var/log/vsftpd.log
+로그파일을 지정(디폴트는 /var/log/xferlog)
+
+xferlog_std_format=YES
+표준 포맷으로 로그를 기록할 지 설정
+vsftpd 로그 방식은 표준 방식보다 상세한 기록을 남긴다.
+
+idle_session_timeout=600
+사용자가 FTP 접속후 아무 작업도 하지 않을 때 접속을 끊을 시간 설정
+단위는 초(10분 x 60초)
+
+ftpd_banner=vsftpd 버전
+ftp 서버 접속할 때 메시지
+
+session_support=YES
+로그인 로그 남기기 여부
+
+
+chroot_local_user=YES
+사용자가 자신의 home directory를 벗어나지 못하도록 설정
+---> apple 계정이 ftp 로 로그인 하면 apple 의 홈디렉토리 /home/apple 으로 
+이동하는 데 자신의 홈디렉토리를 
+최상위 디렉토리(루트디렉토리) 로 전환(chroot) 시키는 설정이다. 
+자신의 홈디렉토리가 / (루트) 가 되면
+더 이상 올라갈 데가 없으므로 상위 디렉토리로 이동이 불가능하게 된다.
+
+chroot_list_enable=YES
+상위로 이동하는 것에 대한 예외 설정
+
+chroot_list_file=/etc/vsftpd/chroot_list
+위의 디렉토리 이동제한에 이용되는 사용자 목록 파일
+chroot_local_user=YES 항목이 없을 경우 이 파일의 사용자는 상위로 이동 불가
+
+
+userlist_enable=YES
+사용자 접근제한 기능 사용여부
+
+userlist_deny=YES
+사용자 목록을 거부자 목록으로 이용할지, 허용자 목록으로 이용할지 결정
+
+anon_max_rate=0
+익명 접속시 전송속도 제한항목 
+(0은 제한없다는 의미, 단위는 초당 bytes)
+
+local_max_rate=0
+/etc/passwd 에 등록된 사용자 전송속도 제한항목 
+(0은 제한없다는 의미, 단위는 초당 bytes)
+
+max_clients=10
+최대 접속자 수 제한
+
+max_per_ip=3
+하나의 IP당 접속 수 제한 설정
+
+listen=YES
+수퍼서버(xinetd) 방식이 아닐 때 YES 사용(Standalone 방식일 때)
+
+tcp_wrappers=YES
+TCP Wrappers 접근제한 프로그램 사용 여부
+
+
+
+☞FTP 서버 포트 및 동작 모드
+
+포트 21 번 사용
+평상시에는 21번 포트가 열려 있고 데이타 전송시 추가로 포트가 열린다.
+
+active mode(활성모드)  : 명령어는 21번 포트 사용, 
+                                   데이타 포트는 20번 사용
+
+passive mode(수동모드) : 방화벽이 포트 제한을 할 때 사용하며 
+                                    명령어는 21번 포트 사용,
+			            데이타 포트는 임의로 지정되는 모드
+
+
+
+▷Active Mode(Default)
+1)FTP Client opens command channel to server; tells server second port number to use
+2)FTP Server acknowledges
+3)FTP Server opens data channel to clients second port as instructed
+4)FTP Client acknowledges and data flows
+
+
+FTP 클라이언트 : 알FTP, 리눅스 ftp 명령어
+
+Active 모드 동작 예 :
+
+FTP 클라이언트                       FTP 서버
+
+Port(3000)---------------------->Port(21)
+	         Data  포트 알림     
+
+                     Data 채널
+Port(3001)<-----------------------Port(20)
+              ----------------------->
+                     Data 전송
+
+
+▷Passive Mode
+1)FTP Client opens command channel to FTP server and requests "passive" mode.
+2)FTP Server Allocates port for the data channel and transmits the port number to use for the data transmission
+3)FTP Client opens the data channel on the specified port
+4)FTP Server responds with okay to transmit and data begins to flow
+
+
+Passive 모드 동작 예 :
+
+FTP 클라이언트                      FTP 서버
+
+Port(5000)---------------------->Port(21)
+                     PASV 요청
+              <---------------------
+	               2000
+
+Port(5001)----------------------->Port(2000)
+             <-----------------------
+                        Data
+
+
+<FTP 서버 테스트>
+☞ftp 서버도 기본적으로 루트 로그인이 안 된다.
+☞서버 설정파일(vsftpd.conf)이 변경되면 서비스를 재시작 해 주어야 반영된다.
+
+
+#netstat -ntlp  |  grep  ftp
+---> 21번 포트가 없으면 리눅스 머신이 FTP 서버로 
+      동작하고 있지 않다는 의미이다.
+
+포트 번호와 서비스 이름은 /etc/services 를 참조하면 된다.
+#grep  '^ftp'  /etc/services
+
+
+☞vsftpd 시작 
+
+#/etc/init.d/vsftpd  
+(---> /etc/rc.d/init.d/vsftpd 와 동일)
+사용법: /etc/init.d/vsftpd {start|stop|restart|condrestart|status}
+
+#/etc/init.d/vsftpd start 
+(service vsftpd start 와 동일)
+
+#netstat -ntlp | grep vsftpd
+tcp        0      0 0.0.0.0:21                  0.0.0.0:*                   LISTEN      2537/vsftpd
+
+
+
+테스트 계정 생성 및 암호 설정
+#adduser  grape
+#passwd  grape
+1234
+1234
+
+
+[윈도우]
+알FTP 이용하여 리눅스 머신으로 grape 계정 로그인
+
+FTP 주소 : 리눅스아이피 입력
+사용자 ID : grape
+비밀번호 : 1234
+포트 : 21
+
+
+☞테스트 항목
+1)배너 설정
+2)최대 접속자수 제한 
+3)디렉토리 이동 제한
+4)루트 로그인
+
+[first]
+#cd  /etc/vsftpd
+#vi   vsftpd.conf
+
+86 ftpd_banner=First FTP Server Test (1번 설정)
+---> 라인 앞의 # 제거하고 입력
+
+121 max_clients=2 (2번 설정)
+
+96 chroot_local_user=YES (3번 설정, # 제거)
+97 chroot_list_enable=YES (3번 설정, # 제거)
+99 chroot_list_file=/etc/vsftpd/chroot_list (3번 설정, # 제거)
+
+#touch  /etc/vsftpd/chroot_list (3번 설정)
+
+#service  vsftpd  restart
+
+▷4번 설정
+FTP 루트 로그인 허용 설정
+
+#cd  /etc/vsftpd
+#vi   ftpusers
+2 #root
+--->2번 라인앞에 # 입력해서 주석처리하고 저장후 종료 
+
+#vi  user_list
+7 #root
+--->7번 라인앞에 # 입력해서 주석처리하고 저장후 종료
+
+
+▷디렉토리 이동제한 예외 설정
+#cd  /etc/vsftpd
+#ls
+#cat  chroot_list
+#echo  root  >>  chroot_list
+#cat  chroot_list
+
+--->루트는 상위 디렉토리 이동이 가능하도록 설정
+
+
+☞FTP 서버 실습(second 리눅스에서 실습)
+1. second 리눅스 ftp 서버 접속시 계정에 상관없이 상위로 이동하지 못하도록 설정
+(root 는 예외 설정)
+2. 배너 메시지 변경하기(파일로 설정하기)
+1) ftp 서버 설정파일에 banner_file=/work/ftptest.txt 항목 추가 
+2) /work 폴더 생성
+3) /work/ftptest.txt 파일 작성
+3. black 계정 추가 및 암호 설정하고 black 계정은 ftp 로그인이 안 되도록 설정
+(ftpusers 또는 user_list 파일에 계정 등록)
+4. 윈도우 에서 ftp 접속 해서 결과 확인하기
+
+서버 설정이 변경되면 서비스 재시작한 후 결과 확인
+
+
+▣익명(Anonymous) FTP 사용하기
+사용자 ID : anonymous(또는 ftp)
+비밀번호 : 이메일(또는 엔터)
+
+-익명 접속시 리눅스 서버에서는 ftp 계정으로 처리되므로
+/etc/passwd 의 ftp 계정의 홈디렉토리로 이동된다.
+-익명 접속을 허용 안하려면  vsftpd.conf 를 수정(anonymous_enable=NO)후
+서비스를 재시작 하면 된다.
+
+
+#grep  grape  /etc/passwd
+#grep  ftp  /etc/passwd
+ftp:x:14:50:FTP User:/var/ftp:/sbin/nologin
+
+#ls  /var/ftp
+#cp  /etc/hosts  /var/ftp
+
+윈도우에서 anonymous(익명 접속) FTP 테스트
+
+
+
+▣NFS
+NFS : Network File System
+
+▷Sun 사에서 서버 자원 공유를 위해 개발 됨
+▷리눅스 및 유닉스 운영체제간에 디렉토리 단위로 공유하는 서비스
+▷서버 한대를 파일공유 서버로 만들어서 여러 클라이언트가 자료를 
+이용할 수 있도록 하는 목적으로 사용 될 수 있다.
+
+
+
+
+☞NFS 접속 구조
+
+서버-클라이언트 구조로 사용된다.
+
+▷NFS 서버          : 파일을 공유시켜 놓은 컴퓨터
+▷NFS 클라이언트  : NFS 서버를 이용하는 컴퓨터
+
+
+[NFS 클라이언트]                                  [NFS 서버]
+
+레드햇 리눅스        <--------------------     
+                                                         공유된
+데비안 리눅스        <--------------------        
+                                                          자료
+유닉스                 <--------------------
+
+
+
+
+[A server]               [B server]
+    /                           /
+    |                            |
+    a(공유)   ----->      mnt
+    |           마운트         |
+ +-+-+                    +-+-+
+ |       |                    |       |
+ b      c                   b      c
+
+A 서버에서 a 디렉토리를 공유하면 하위 디렉토리 b, c 도 공유가 된다.
+B 서버에서는 A 서버의 a 디렉토리를 mnt 에 마운트하면
+자신의 디렉토리처럼 b c 에 접근할 수 있다.
+(연결 디렉토리 mnt 는 임의로 지정할 수 있다.)
+
+☞패키지 확인
+1) NFS 관련 패키지
+[first]
+#rpm  -qa  |  grep  nfs
+nfs-utils
+nfs-utils-lib
+
+2) RPC 관련 패키지
+[first]
+#rpm  -qa  |  grep  rpcbind
+
+
+☞RPC(Remote Procedure Call) : 
+원격 함수 호출, 자신의 컴퓨터에서 원격지 컴퓨터의 함수 또는 프로그램을 실행시키는 것
+서비스마다 포트가 틀리고 자주 사용하는 서비스는 포트가 고정되어 있다.
+포트는 한정된 자원이므로 프로그램에 따라서는 고정된 포트가 아니라
+동적으로 할당된 포트를 이용하기도 한다.
+동적으로 포트가 할당된 경우 클라이언트에서는
+그 포트를 알지 못하므로 직접 접속할 수가 없고
+RPC 를 통해서 해당 서비스의 포트를 확인 한 후
+그 포트를 서비스를 이용하게 된다.
+
+NFS 는 대표적인 RPC 서비스이다.
+서버쪽에서는 부팅시에 portmapper 가 실행되면서 mountd 데몬의 
+포트를 동적으로 할당한다.
+클라이언트가 마운트 요청을 하면 서버쪽의 portmapper 가 
+클라이언트에게 mountd 데몬의 포트를 알려주고
+클라이언트가 그 포트를 이용하여 mountd 와 통신을 하게 된다.
+
+
+portmapper(CentOS 6 버전에서는 rpcbind 로 서비스 이름이 변경 됨) :
+RPC 서비스들의 포트를 관리하는 프로그램
+
+
+<NFS Server  설정>
+▷공유 설정 파일 : /etc/exports
+
+▷exports 파일 형식
+공유디렉토리     아이피 or 문자주소(옵션)
+
+▷옵션
+ro                      // read only (디폴트, 읽기 전용)
+rw                     // read, write(읽기,쓰기)
+root_squash       // 루트 무시(디폴트, 클라이언트의 루트로 접근해도 익명 계정으로 처리된다.)
+no_root_squash  // 클라이언트에게 서버측 루트 권한 주기
+all_squash         // 클라이언트 측에서 사용자로 접근 요청 했을 때 익명 계정으로 연결을 허용
+                         (디폴트는  no_all_squash)
+anonuid=UID     // 클라이언트 측에서 익명으로 접근 요청시 지정한 UID 로 연결
+anongid=GID     // 클라이언트 측에서 익명으로 접근 요청시 지정한 GID 로 연결
+wdelay              // 작업시 지연설정(디폴트,여러 클라이언트가 동시에 
+                           이용할 수 도 있으므로 약간의 시간을 두고 처리하게 된다.)
+
+
+
+//////////////////////////////////////////////////////
+squash
+1 짓누르다;눌러 찌그러뜨리다(crush);짜다, 납작하게 만들다
+2 (좁은 곳에) 밀어 넣다, 쑤셔 넣다 《into》
+3 <반란 등을> 진압하다;《구어》 <사람을> 끽소리 못하게 하다
+1 찌부러지다, 납작해지다
+2 철썩 떨어지다
+
+squash
+1【식물】 호박 《덩굴식물 및 열매》  
+//////////////////////////////////////////////////////
+ 
+
+☞NFS 서버 데몬
+nfsd                      // 데이타 전송 처리
+rpc.mountd            // 마운트 처리
+rpc.statd, rpc.lockd  //  클라이언트가 공유된 자원의 동시 접속시
+                               발생하는 파일 locking 처리를 담당하는 데몬
+
+
+☞데몬 스크립트 : /etc/init.d/nfs 
+
+☞공유목록 확인 : exportfs  (-v)
+-v 공유 설정을 자세히 출력하는 옵션
+exportfs  -ra(NFS 데몬 재시작 없이 변경된 내용 적용)
+
+☞portmap 확인
+NFS 서비스는 동적으로 포트를 할당받는 RPC(Remote Procedure Call)서비스 이다.
+NFS 서비스는 portmap(rpcbind) 데몬이 먼저 동작하고 있어야 한다.
+
+rpcinfo : rpc 서비스들의 정보를 확인하는 명령어
+-p : 포트 출력 옵션
+
+[first]
+#/etc/init.d/rpcbind  status
+(service  rpcbind  status  와  동일)
+#ps  -ef  |  grep  rpcbind
+#rpcinfo   -p
+
+
+<NFS Client>
+클라이언트는 mount 명령을 이용해서 NFS 자원을 이용한다.
+
+▷서버측 공유목록 확인
+showmount  -e  [아이피 or 문자주소]
+
+▷마운트 형식  
+mount  -t  nfs  [서버아이피 or 문자주소:공유디렉토리]   마운트디렉토리
+(-t  nfs 는 생략 가능)
+
+<NFS 테스트 환경>
+아래와 같이 네트워크 설정
+
+[first]                        [second]   
+192.168.x.10              192.168.x.20
+NFS 서버                   NFS 클라이언트 
+
+
+
+[first]
+NFS server
+
+#cat  /etc/exports
+---> 공유 설정 파일
+
+#mkdir  /nfs_server1  /nfs_server2
+---> 공유할 폴더 생성
+#ls  /
+
+#vi  /etc/exports
+/nfs_server1       192.168.x.20(rw,no_root_squash)
+/nfs_server2       192.168.x.0/255.255.255.0(rw,sync)  
+
+//////////////////////////////////////////////////////////////////////////
+위 파일의 첫번째 줄은 first 리눅스의 /nfs_server1 디렉토리를 192.168.x.20 컴퓨터에게 
+읽기,쓰기,루트권한주기 옵션으로 공유하는 설정
+
+/nfs_server1   *(rw,root_squash) 처럼 공유하면 모든 컴퓨터에서 이용가능하게 된다.
+
+192.168.0.*(192.168.0.1, 192.168.0.2 ...)로 접근제한을 하려면 
+192.168.0.0/24 또는 192.168.x.0/255.255.255.0 으로 /etc/exports 에 등록하면 된다.
+(24 는 192.168.0 까지의 비트수를 의미한다. )
+
+sync : 동기화 처리(디폴트)
+async : 비동기 처리, sync 와 반대
+
+
+     async  This option allows the NFS server to violate  the  NFS  protocol
+              and  reply  to  requests before any changes made by that request
+              have been committed to stable storage (e.g. disc drive).
+
+              Using this option might improve performance with version 2 only,
+              but  at  the  cost that an unclean server restart (i.e. a crash)
+              can cause data to be lost or corrupted.
+
+       sync   Reply to requests only after the changes have been committed  to
+              stable storage (see async above).
+
+//////////////////////////////////////////////////////////////////////////
+
+
+
+▷rpcbind(portmapper) 
+RPC 서비스 포트관리 프로그램
+
+NFS 클라이언트가 NFS 서버의 공유디렉토리를 마운트하려고 할 때
+먼저 서버측의 111 번 포트의 portmapper 에게 마운트를 담당하는 
+mountd 의 포트를 물어보고 그 다음에 클라이언트가 
+서버측의 mountd 포트로 접속을 해서 마운트 처리가 완료된다.
+
+[서버]                                                               [클라이언트]
+
+portmap(111번 포트)        <----------------------     mount 요청
+
+                                      ---------------------->
+				       mountd 의 포트 전송
+
+rpc.mountd(포트 랜덤 할당) <---------------------     mount 처리 
+
+nfsd                                  ---------------------->
+                                               데이타 전송
+
+
+
+[first]
+NFS 서비스 시작 및 확인
+#service  nfs  start
+
+#ps  -ef  |  grep  nfs
+#ps  -ef  |  grep  mountd
+---> 메모리에 실행된 프로세스 확인
+
+#rpcinfo -p
+   프로그램 버전 원형   포트
+    100000    2   tcp    111  portmapper
+    100000    2   udp    111  portmapper
+    100024    1   udp  32768  status
+    100024    1   tcp  32769  status
+    100011    1   udp    728  rquotad
+    100011    2   udp    728  rquotad
+    100011    1   tcp    731  rquotad
+    100011    2   tcp    731  rquotad
+    100003    2   udp   2049  nfs
+    100003    3   udp   2049  nfs
+    100003    4   udp   2049  nfs
+    100003    2   tcp   2049  nfs
+    100003    3   tcp   2049  nfs
+    100003    4   tcp   2049  nfs
+    100021    1   udp  32770  nlockmgr
+    100021    3   udp  32770  nlockmgr
+    100021    4   udp  32770  nlockmgr
+    100021    1   tcp  32770  nlockmgr
+    100021    3   tcp  32770  nlockmgr
+    100021    4   tcp  32770  nlockmgr
+    100005    1   udp    757  mountd
+    100005    1   tcp    760  mountd
+    100005    2   udp    757  mountd
+    100005    2   tcp    760  mountd
+    100005    3   udp    757  mountd
+    100005    3   tcp    760  mountd
+#
+
+서비스 재시작)
+#service  nfs  stop
+#service  nfs  start
+또는
+#service  nfs  restart
+
+
+
+
+
+포트 변경 확인)
+#rpcinfo -p
+   프로그램 버전 원형   포트
+    100000    2   tcp    111  portmapper
+    100000    2   udp    111  portmapper
+    100024    1   udp  32768  status
+    100024    1   tcp  32769  status
+    100011    1   udp    849  rquotad
+    100011    2   udp    849  rquotad
+    100011    1   tcp    852  rquotad
+    100011    2   tcp    852  rquotad
+    100003    2   udp   2049  nfs
+    100003    3   udp   2049  nfs
+    100003    4   udp   2049  nfs
+    100003    2   tcp   2049  nfs
+    100003    3   tcp   2049  nfs
+    100003    4   tcp   2049  nfs
+    100021    1   udp  32770  nlockmgr
+    100021    3   udp  32770  nlockmgr
+    100021    4   udp  32770  nlockmgr
+    100021    1   tcp  32771  nlockmgr
+    100021    3   tcp  32771  nlockmgr
+    100021    4   tcp  32771  nlockmgr
+    100005    1   udp    861  mountd
+    100005    1   tcp    864  mountd
+    100005    2   udp    861  mountd
+    100005    2   tcp    864  mountd
+    100005    3   udp    861  mountd
+    100005    3   tcp    864  mountd
+#
+
+---> NFS 서비스를 재시작하면 mountd 포트가 변경되는 것을 알 수 있다.
+(이러한 서비스가 RPC 서비스이다.)
+NFS 서버를 이용하는 클라이언트 입장에서는 mountd 의 포트를 알 필요는 없고
+111 번 포트를 이용하는 portmapper 에게 먼저 물어보면 mountd 의 
+포트를 알 수 있으므로 그 포트를 이용하여 통신을 하게 된다.
+
+
+/////////////////////////////////////////////////////////////////////
+#man  portmap
+
+PORTMAP(8)                BSD System Manager’s Manual               PORTMAP(8)
+
+NAME
+     portmap - DARPA port to RPC program number mapper
+
+SYNOPSIS
+     portmap [-d] [-l] [-v]
+
+DESCRIPTION
+     Portmap is a server that converts RPC program numbers into
+     DARPA protocol port numbers.  It must be running in order to
+     make RPC calls.
+
+     When an RPC server is started, it will tell portmap what port
+     number it is listening to, and what RPC program numbers it is
+     prepared to serve.  
+     
+     When a client wishes to make an RPC call to
+     a given program number, it will first contact portmap on the
+     server machine to determine the port number where RPC packets
+     should be sent.
+
+     Portmap must be started before any RPC servers are invoked.
+
+/////////////////////////////////////////////////////////////////////
+
+
+공유 디렉토리 확인)
+#exportfs 
+---> /etc/hosts 에 문자주소가 등록되어 있으면 아이피 대신 문자로 출력된다.
+
+
+#exportfs  -v
+-v 설정내용을 자세히 출력시키는 옵션
+
+
+
+테스트 파일 생성)
+#cd  /nfs_server1
+#pwd
+#touch  first_첫번째리눅스아이피.txt
+#ls
+
+
+/////////////////////////////////////////////////////////////////////
+NFS 4 UID 맵핑 설정
+[first]
+#vi  /etc/idmapd.conf
+6 Domain  =  linux1.andylec.com
+
+#service  nfs  restart
+
+[second]
+#vi  /etc/idmapd.conf
+6 Domain  =  linux1.andylec.com
+
+#/etc/init.d/rpcidmapd  restart
+또는  service  rpcidmapd  restart
+
+/////////////////////////////////////////////////////////////////////
+
+
+클라인트 설정 및 테스트)
+[second]
+NFS client
+
+#ifconfig
+
+#showmount   첫번째리눅스아이피
+---> -e 옵션을 지정해야 공유목록을 확인할 수 있다.
+
+#showmount   -e   첫번째리눅스아이피 
+Export list for x.x.x.x:
+--->다른 컴퓨터의 공유 목록 확인
+
+
+☞테스트 환경
+[서버]                                            [클라이언트]
+/nfs_server1                                    /nfs_client1
+/nfs_server2      ---------------->        /nfs_client2
+                            마운트
+
+☞테스트 1
+[second]
+#mkdir  /nfs_client1
+#mount  -t  nfs   첫번째리눅스아이피:/nfs_server1   /nfs_client1
+또는 
+#mount  -t  nfs   first:/nfs_server1  /nfs_client1
+---> /etc/hosts 에 first 가 등록되어 있는 경우
+
+#df  -h
+#df  -T
+#cd  /nfs_client1
+#ls
+#touch  second.txt
+#ls  -l
+
+
+☞테스트 2
+[second]
+#mkdir   /nfs_client2
+#mount  -t  nfs  첫번째리눅스아이피:/nfs_server2   /nfs_client2
+#df  -h
+
+#cd  /nfs_client2
+#pwd
+#ls
+#touch   redhat.txt
+---> X
+---> NFS 서버 설정에서 rw 로 쓰기 권한까지 주었지만 
+      디렉토리 퍼미션의 권한이 없어서 파일이 만들어 지지 않는다.
+
+
+[first]
+#ls   -ld   /nfs_server2
+#chmod   777  /nfs_server2
+#ls   -ld   /nfs_server2
+
+
+[second]
+#pwd
+/nfs_client2
+#touch  redhat.txt
+#ll
+---> first NFS 서버에서 디렉토리 퍼미션에 쓰기 권한을 주어서 
+      파일이 만들어진다.
+---> 파일의 소유자와 그룹이 특정 계정으로 나타나게 하려면 
+      NFS 서버 공유 설정에서 anonuid, anongid 를 이용하면 된다.
+---> NFS 클라이언트 루트에게 루트권한을 주려면 no_root_squash 옵션을 이용하면 된다.
+
+
+
+마운트 해제하기)
+[second]
+#umount  /nfs_client2
+---> busy 라고 나오면 다른 디렉토리로 이동후 마운트 해제
+#pwd
+#cd
+#pwd
+/root
+
+#umount  /nfs_client2
+#ls  /nfs_client2
+#df  -h
+
+#umount  /nfs_client1
+#ls  /nfs_client1
+#df  -h
+
+
+▣실습
+1. second 리눅스를 NFS 서버로 설정
+1) /share1,  /share2 디렉토리 생성
+2) /share1  은  루트권한을 주고, 읽기, 쓰기 옵션으로 공유 설정
+3) /share2  는  루트권한 무시, 읽기, 쓰기, 익명사용자는 apple 계정(UID 500번), apple 그룹(GID 500번) 으로 처리 설정
+
+2. first 리눅스에서 테스트
+
+//////////////////////////////////////////////////////////////////////////
+[second]
+#mkdir  /share1  /share2
+#vi  /etc/exports
+/share1      *(rw,no_root_squash,sync)
+/share2      *(rw,root_squash,anonuid=500,anongid=500,sync)
+#chmod  777  /share2
+#service  rpcbind  restart
+#service  nfs   restart
+
+
+[first]
+#mkdir  /my1  /my2
+#rpcinfo  -p  두번째리눅스아이피
+#showmount  -e  192.168.x.20
+--->두번째리눅스 아이피 입력
+#mount  -t  nfs   192.168.x.20:/share1  /my1
+#mount  -t  nfs   192.168.x.20:/share2  /my2
+#df  -h
+
+/////////////////////////////////////////////////////////////////////////
+
+
+
+

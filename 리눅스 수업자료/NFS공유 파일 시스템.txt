@@ -1,0 +1,38 @@
+NFS(Network File System) -> 리눅스에서 디렉토리 공유
+->리눅스 컴퓨터 끼리 저장 공간을 공유할 수 있도록 해주는 시스템
+1. rpm -qa nfs-utils
+   rpm -qa portmap -> 공유와 관련된 패키지 프로그램
+2. /etc/exports 파일에 공유할 디렉토리를 추가해 준다.
+공유할 폴더 /share 생성
+gedit /etc/exports
+편집
+/share 192.168.100.201(rw,sync)
+
+/share 공유폴더 192.168.100.201 이 ip 접근허가 접근권한(rw->read/write, sync -> 실시간 연결)
+# chmod 707 /share
+# cp install.* /share
+#ls /share
+#service nfs start
+chkconfig nfs on -> 데몬을 서비스에 저장..
+#service-config-services -> nfs 체크 저장 재시작
+--------------------------------------------------------------
+시작된 데몬 확인
+cd /etc/init.d -> 백그라운드에서 작동되는 서비스들의 목록
+---------------------------------------------------------------
+3. exportfs -v 명령으로 서비스가  제대로 작동하는지 확인
+/share  192.168.100.150 (root_squash) ->root권한을 가지지 못하도록 하는 방지하는 옵션
+----------------------------------------------------------------
+페도라 클라이언트 에서 작업
+1. showmount -e 192.168.0.100 명령으로 nfs 서버에 공유된 디렉토리 확인
+2. NFS 서버의 /share 디렉토리에 마운트 디렉토리 /mnt/nfs 만들고 마운트 생성
+mkdir /mnt/nfs
+mount -t nfs 192.168.0.100:/share /mntshare
+ls /mnt/nfs
+/mnt/nfs 디렉토리를 사용한다는 것은 것은 nfs 서버의 /share 디렉토리를 사용하는 것과 같은 의미
+페도라 클라이언트 
+
+3. NFS 클라이언트가 부팅될때마다 NFS 디렉토리에 자동으로 마운트 되도록 설정..
+gedit /etc/fstab 
+192.168.100.150:/share		/mnt/nfs  nfs   defaults  1 2
+리부팅 후 확인
+ls /mnt/nfs 

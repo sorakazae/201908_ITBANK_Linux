@@ -1,0 +1,57 @@
+DHCP 서버 
+1. yum -y install dhcp
+2. 데몬이름 : dhcpd
+3.vi /etc/dhcpd.conf
+4. /usr/share/doc/dhcp*/dhcpd.conf.sample
+5. cp dhcpd.conf.sample /etc/dhcpd.conf 
+6. DHCP Client 임대정보 확인 할 수 있도록 파일 설정
+cd /var/lib/dhcpd/dhcpd.leases 
+만일 위 파일이 없을 경우
+touch 으로 dhcpd.leases 생성해 주어야 한다.
+7. vi /etc/dhcpd.conf
+subnet 192.168.0.0 netmask 255.255.255.0 {
+
+# --- default gateway
+        option routers                  192.168.0.100;
+        option subnet-mask              255.255.255.0;
+
+#       option nis-domain               "domain.org";
+        option domain-name              "itbank.vm";
+        option domain-name-servers      192.168.0.100;
+
+        option time-offset              -18000; # Eastern Standard Time
+#       option ntp-servers              192.168.1.1;
+#       option netbios-name-servers     192.168.1.1;
+# --- Selects point-to-point node (default is hybrid). Don't change this unless
+# -- you understand Netbios very well
+#       option netbios-node-type 2;
+
+        range dynamic-bootp 192.168.0.240 192.168.0.250;
+        default-lease-time 21600;
+        max-lease-time 43200;
+
+5. service dhcpd start
+6 ip 발급 확인
+vi /var/lib/dhcpd/dhcpd.leases
+DHCP Client
+1. ipconfig /release -> ip 해제
+2. ipconfig /renew -> ip 갱신
+
+3. ipconfig/all
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,740 @@
+[ITBANK Andylec  주말 리눅스 2 과정]
+
+▣오늘의 수업내용(5일차)
+Autofs
+Samba
+
+
+▣공지사항
+-다음 달 수강신청을 해 주시기 바랍니다.
+
+
+
+▣Autofs
+-사용시점에 파일 시스템을 자동으로 마운트하고
+일정시간 사용하지 않으면 언마운트 해 주는 데몬
+-주로 NFS 나 자주 사용되지 않는 장치를 마운트 할 때 사용
+
+
+☞패키지
+[first]
+#rpm  -qa  |  grep  autofs
+
+q   //query
+a   //all
+rpm  -qa  //리눅스에 설치된 프로그램(패키지) 모두 출력
+rpm  -qa  |  grep  autofs  //설치된 프로그램중에 autofs 들어간 프로그램만 출력
+
+yum  -y  install  패키지명(프로그램이름)   //인터넷의 패키지 서버에 해당 프로그램을 다운받아 설치
+
+☞데몬
+/usr/sbin/automount
+
+☞데몬 스크립트
+/etc/init.d/autofs
+
+
+☞테스트 환경
+[first]                                                 [second]
+NFS 서버                                            Autofs
+
+
+☞autofs 서버 설정
+서버에서는 NFS 설정만 해 주면 된다.(/etc/exports)
+
+☞autofs 클라이언트 설정
+[second]
+
+1. /etc/sysconfig/autofs
+autofs 데몬에 대한 설정 파일
+
+6 #MASTER_MAP_NAME="auto.master"
+자동마운트에 사용될 주설정 파일 지정
+
+10 TIMEOUT=300
+자동마운트된 자원을 사용하지 않을 때 언마운트할 시간(5분, 단위 초)
+
+32 BROWSE_MODE="yes"
+auto.master 에서 지정한 파일을 브라우징 시킬 지 여부
+autofs 를 사용하려면 yes 로 수정해야 함
+
+
+2. /etc/auto.master 
+자동마운트할 대상 디렉토리 마스터 설정 파일
+
+/misc          /etc/auto.misc
+/misc 디렉토리를  /etc/auto.misc 파일을 적용하여 사용하겠다는 의미
+/etc/auto.misc 에서 설정한 디렉토리가  /misc 하위에 자동 생성되어 마운트 된다.
+
+
+3. /etc/auto.misc
+auto.master 파일에 설정해 준 디렉토리 하위에 
+실제 마운트 될 mount point 설정 파일
+
+☞마운트 옵션
+suid, nosuid      // SetUID 허용 여부
+bg                    // nfs 마운트를 처음에 실패할 경우 백그라운드 실행 
+retry=숫자         // 포기할 때까지 마운트 재시도 횟수(기본값은 일만번, 10000)
+timeo=숫자       // 마운트 시도 시 타임아웃 시간을 설정(단위는 1/10 초)
+soft, hard          // 재시도 횟수가 끝 났을 때 연결을 계속 할 지 결정(hard 는 무한 재시도, soft 는 타임아웃 될 때 까지 시도)
+retrans=숫자     // 숫자 만큼 요구를 재전송하는 것으로 기본은 3번
+intr                  // 정지 프로세스를 죽이기 위한 인터럽트를 허용
+rsize=숫자        // nfs 서버에 있는 읽기 버퍼의 크기(바이트 단위)
+wsize=숫자       // nfs 서버에 있는 쓰기 버퍼의 크기(바이트 단위)
+
+
+
+☞autofs  테스트
+1. NFS 자동마운트
+
+[first]
+---> NFS 서버 설정
+
+#mkdir  /nfs_share
+#chmod  777  /nfs_share
+
+#vi  /etc/exports
+---> NFS 공유 설정 파일
+기존 내용은 모두 삭제하고 아래 내용 입력
+
+/nfs_share        *(rw,sync)
+
+#service  rpcbind  restart
+#service  nfs  restart
+#exportfs
+공유목록 확인
+#exportfs  -v
+-v 자세히 출력
+
+
+[second]
+---> Autofs 사용
+
+#showmount  -e  첫번째리눅스아이피
+--->공유목록 확인
+
+#vi  /etc/sysconfig/autofs
+
+33 BROWSE_MODE="yes"
+---> no 를 yes 로 수정
+
+#cat  /etc/auto.master
+자동 마운트될 베이스 디렉토리(상위 디렉토리)가 /misc 로 되어 있음
+
+
+#vi  /etc/auto.misc
+
+first_share      -rw,soft,intr    첫번째리눅스아이피:/nfs_share
+
+
+/////////////////////////////////////////////////////////////////////
+--->첫번째리눅스아이피:/nfs_share 에서 / 를 빼면 안 됨
+
+형식)
+자동마운트할디렉토리       마운트옵션     마운트할자원
+
+---> /etc/auto.master 파일에 /misc 디렉토리가 정의되어 있으므로
+/misc/first_share 디렉토리를 찾아갈 때 자동마운트가 된다.
+/////////////////////////////////////////////////////////////////////
+
+
+#ps  -ef  |  grep  auto
+부팅 중에 실행된 automount 가 출력 됨
+
+#service  autofs  restart
+
+[first]
+#cd  /nfs_share
+#touch  first.txt
+
+[second]
+#df  -h
+#cd  /misc
+#ls
+#cd  first_share
+#ls
+#df  -h
+
+/////////////////////////////////////////////////////////////////////
+/etc/auto.master 파일 : /misc 디렉토리 등록 되어 있음
+/etc/auto.misc 파일 : first_share 디렉토리 등록 되어 있음
+
+cd 를 이용하여 /misc/first_share 디렉토리를 찾아갈 때
+첫번째리눅스의 /nfs_share 가 autofs 에 의해 자동 마운트 됨
+/////////////////////////////////////////////////////////////////////
+
+
+2. NFS, Autofs, FTP 응용
+
+[first]
+#adduser  -u  2001  candy1
+#adduser  -u  2002  candy2
+
+#cd  /nfs_share
+
+#mkdir  candy1  candy2
+
+#chown   candy1:candy1  candy1
+#chown  candy2:candy2  candy2
+#ll
+
+[second]
+#adduser  -u  2001  candy1
+#adduser  -u  2002  candy2
+#passwd  candy1
+1234
+1234
+#passwd  candy2
+1234
+1234
+
+#grep  candy  /etc/passwd
+
+#usermod  -d  /misc/first_share  candy1
+#usermod  -d  /misc/first_share  candy2
+
+#grep  candy  /etc/passwd
+
+
+#yum  -y  install  vsftpd
+---> FTP 서버 프로그램 설치
+
+#service  vsftpd  restart
+---> FTP 서비스 시작
+
+#netstat  -ntlp  |  grep  vsftpd
+---> FTP 서비스 포트 21 확인
+
+
+☞테스트 환경
+
+[first]                                       [second]
+NFS 서버    --->(자동마운트)        Autofs, FTP 서버
+                                                 ^
+				                  |
+                                             [윈도우]
+
+[win7]
+알FTP 이용 second 로 ftp 로그인 테스트(candy1, candy2)
+
+---> 윈도우에서 두번째리눅스로 FTP 로그인 할 때
+첫번째리눅스의 디렉토리가 자동마운트 됨(서버 응용 예)
+
+
+▣실습
+1. first 리눅스에서 /nfs_share2  디렉토리 NFS 공유 설정
+2. second 리눅스에서  /misc/first  디렉토리로 이동시
+first 리눅스의 /nfs_share2 디렉토리가 자동마운트 되도록 설정
+3. second 리눅스에 bank1, bank2 계정 생성 및 암호 설정하기
+4. 윈도우에서 second 리눅스로 bank1, bank2 계정으로 알FTP 접속할 때
+first 리눅스의 /nfs_share2 디렉토리가 사용되도록 설정하기
+(2번 autofs 사용)
+
+
+[first]                                 [second]
+NFS 서버                             Autofs, FTP 서버
+/nfs_share2  ------------->     /misc/first
+
+
+                                          [윈도우]
+                                          알FTP
+
+
+
+//////////////////////////////////////////////////////////////////////////
+[first]
+#mkdir  /nfs_share2
+#chmod  777  /nfs_share2
+#touch  /nfs_share2/first.txt
+#vi  /etc/exports
+/nfs_share2        *(rw,no_root_squash,sync)
+#service  rpcbind  restart
+#service  nfs  restart
+#rpcinfo  -p
+#exportfs
+#adduser  -u  3001  bank1
+#adduser  -u  3002  bank2
+
+
+[second]
+#vi  /etc/auto.misc
+first         -rw,soft,intr        첫번째리눅스아이피:/nfs_share2
+#service  autofs  restart
+#showmount  -e  첫번째리눅스아이피
+#cd  /misc/first
+#ls
+#df  -h
+#adduser  -u  3001  bank1
+#adduser  -u  3002  bank2
+#passwd  bank1
+1234
+1234
+#passwd  bank2
+1234
+1234
+#usermod  -d  /misc/first   bank1
+#usermod  -d  /misc/first   bank2
+//////////////////////////////////////////////////////////////////////////
+
+
+▣SAMBA
+삼바는 리눅스머신과 윈도우머신간에 MS 윈도우 방식으로 
+자료를 공유할 수 있는 서비스이다.
+
+[windows] <---------------------> [Linux]
+                       Data Share
+
+☞홈페이지 : http://www.samba.org
+
+Samba is the standard Windows interoperability suite of programs for Linux and Unix.
+
+Samba is an important component to seamlessly integrate Linux/Unix Servers and Desktops 
+
+into Active Directory environments using the winbind daemon
+
+
+
+☞삼바 관련 용어
+NetBIOS : 
+넷바이오스는 컴퓨터 상에 있는 응용프로그램들이
+LAN(근거리 통신망) 내에서 서로 통신 할 수 있게 해 주는
+프로그램 이다. 초창기 PC 네트워크를 위해 
+IBM 에 의해 개발 되었으며, 마이크로소프트에 의해
+채택되었고, 산업계 표준이 되었다.
+일반적으로 윈도우 사용자에게는 공유 서비스로 이해되고
+파일과 프린트 서비스, 호스트 도메인과 워크그룹의 구분,
+호스트 브라우징, 브로드캐스팅과 네임 서비스를 포함한 
+폭넓고 다양한 기능을 정의하고 있다.
+
+
+SMB :
+Server Message Block
+다른 시스템의 디스크나 프린터 자원 공유를 위한 프로토콜
+TCP/IP 기반하의 NetBIOS 프로토콜 이용
+
+
+CIFS :
+Common Internet File System
+윈도우와 유닉스 환경을 동시 지원하는 인터넷 표준 파일 규약 프로토콜
+SMB 파일 공유 프로토콜의 확장 버전
+
+
+참조)
+http://www.codefx.com/CIFS_Explained.htm
+
+What is CIFS?
+The Common Internet File System (CIFS), also known as Server Message Block (SMB), 
+is a network protocol whose most common use is sharing files on a Local Area Network (LAN).  
+
+
+☞윈도우 2003 확인 사항
+1)vmware 에서 win2003 을 Open 하기
+2)win2003 부팅시키기
+3)질문나오면 "I copied it " 선택
+4)로그인 화면 에서 Ctrl + alt + insert 를 누르고 암호는 andy 입력
+
+
+
+
+[win2003]
+1)제어판-시스템 클릭
+   컴퓨터 이름-변경 클릭
+   컴퓨터 이름           :  win2003
+   작업 그룹              :  ANDYLEC
+   위와 같이 수정후 확인 클릭
+   질문에 확인-확인 클릭 
+   리부팅 은 아니오 클릭
+--->실제 머신이라면 윈도우 컴퓨터 이름을 각각 다르게 설정해야 함
+
+2)탐색기 실행후 C:\SambaShare 폴더 생성(폴더 이름에 공백 있으면 안 됨)
+C:\SambaShare 폴더 를 마우스로 클릭한 후 마우스 오른쪽 버튼 누르고
+메뉴 마지막 "속성" 을 클릭하기
+공유 탭에서 공유 설정하기
+[일반][공유][보안][사용자 지정]
+            |
+     "(*)이 폴더를 공유" 선택-확인 클릭
+3)리부팅 하기
+
+
+<테스트 1>
+윈도우의 공유자원을 리눅스에서 접근하기(삼바서버 필요 없음)
+
+
+[리눅스]                                          [윈도우]
+디렉토리   <---------------------          공유폴더
+                   CIFS 방식 마운트
+
+
+
+[win2003]
+도스창 실행
+C:\>net  share
+---> $ 로 끝난 자원은 hidden 공유를 의미
+
+[first]
+NFS 로 마운트된 디렉토리 있으면 마운트 해제하기
+
+#df  -h
+#umount  마운트디렉토리
+
+
+▷윈도우 머신의 공유목록 확인
+1) smbclient  -L  컴퓨터이름(또는 아이피)
+---> 리눅스에서 윈도우 XP 공유 자원 확인 할 때
+
+2) smbclient  -L  컴퓨터이름(또는 아이피)  -U  로그인사용자이름
+암호는 로그인사용자의 암호 입력
+
+
+#smbclient  -L  2003아아피
+암호는 엔터 입력
+---> X (공유 자원 출력 안 됨)
+
+
+2003 에서는 아래와 같이 입력
+#smbclient  -L  2003아이피  -U  administrator
+암호 andy 입력
+
+
+#vi  /etc/hosts
+마지막 라인에 추가
+
+윈2003아이피       win2003
+
+---> win2003 은 윈도우 컴퓨터의 이름과 동일하게 적어야 함
+
+#smbclient  -L  win2003  -U  administrator
+
+
+형식)
+mount  -t  cifs  -o  user=윈도우사용자명  윈도우아이피:공유폴더  리눅스마운트디렉토리
+
+---> 윈도우 XP 를 이용하여 테스트할 경우에는 user 를 지정할 필요가 없음
+
+#mkdir  /win
+#mount  -t  cifs  -o  user=administrator   윈2003아이피:SambaShare   /win
+Password: 계정의 암호 입력
+
+또는
+
+#mount  -t  cifs  -o  user=administrator  //윈2003아이피/SambaShare  /win
+
+
+#df  -h
+#df  -T
+
+#cd  /win
+#pwd
+/win
+#ls
+
+
+마운트 해제하기
+#cd
+#pwd
+/root
+#umount  /win
+#df  -h
+
+<테스트 2>
+익명 공유 방식 삼바 테스트
+리눅스의 공유 자원을 윈도우에서 이용할 때(삼바 서버 필요)
+
+[리눅스]                                                    [윈도우]
+공유폴더(디렉토리)    --------------------->     리눅스의 공유자원 접근
+삼바서버 실행
+
+
+☞삼바 관련 파일
+1. 설정파일 디렉토리 : /etc/samba/
+2. 설정파일              : /etc/samba/smb.conf
+
+3. 데몬 스크립트      : /etc/init.d/smb start 
+                              (service  smb  start 와 동일)
+4. 데몬                   : smbd 
+5. 사용 포트            : 139, 445
+
+#man  smbd
+       smbd - server to provide SMB/CIFS services to clients
+       smbd  is  the server daemon that provides filesharing and printing
+       services to Windows clients.
+
+#man  nmbd
+      nmbd  -  NetBIOS name server to provide NetBIOS over IP naming services to clients
+      nmbd is a server that understands and can reply to NetBIOS over IP
+      name service  requests
+
+
+[first]
+#rpm  -qa  |  grep  samba
+#yum  -y  install  samba
+
+#rpm  -qa  |  grep  samba
+samba-common (공통파일-라이브러리,설정파일 등)
+samba-client (삼바 클라이언트 프로그램)
+samba (삼바 서버 프로그램)
+
+
+[first]
+#cd  /etc/samba
+#ls
+lmhosts (/etc/hosts 와 비슷한 역할)
+smb.conf (삼바 설정 파일)
+
+
+
+#vi  smb.conf
+14 # Any line which starts with a ; (semi-colon) or a # (hash)
+15 # is a comment and is ignored. 
+;  나  # 으로 시작되는 라인은 주석(설명) 이다.
+
+삼바 설정은 global 영역과 share 영역으로 구성된다.
+
+
+1)global 영역
+프로그램 버전에 따라 왼쪽 라인 번호는 차이가 날 수 있다.
+
+74 workgroup = ANDYLEC (윈도우의 작업 그룹과 동일하게 설정)
+
+75 server string = First Samba Server %v 
+컴퓨터 설명에 해당
+%v 는 버전으로 변환되어 나타난다.
+
+77 netbios name = FirstSamba
+; 를 제거하고 수정하기(윈도우 네트워크 환경에서 사용되는 컴퓨터이름 설정)
+
+
+80 ;hosts allow = 127.   192.168.12.   192.168.13.  
+---> 접근제한 설정(수업에서는 기본값 그대로 사용)
+192.168.12. 은 192.168.12.* 컴퓨터에서 이용할 수 있다는 의미이다.
+
+89 log file = /var/log/samba/%m.log
+---> 삼바 로그 파일
+/var/log/samba/변환된파일명 에 접속 기록을 저장한다.
+
+%L     //서버의 netbios 이름
+%m    //접속하는 컴퓨터 이름(machine name)을 의미
+%R     //통신에 사용되는 프로토콜(LANMAN1, LANMAN2, NT1 ...)
+%I      //클라이언트 머신의 IP 주소
+
+
+
+91 max log size = 50
+---> 로그파일 사이즈(단위 KB)
+
+
+101 security = share
+---> 인증 설정(user 에서 share 로 변경)
+
+//////////////////////////////////////////////////////////////////////////
+<삼바 인증 설정>
+user
+삼바 서버에 접속하는 클라이언트는 윈도우에 
+로그인한 사용자명과 암호를 확인한 후에 
+삼바 서버 접속이 이루어진다.
+
+share
+유효한 사용자명과 암호로 삼바 서버에 로그인하지 
+않아도 접속이 되는 방식이다.
+
+server
+다른 삼바 서버에서 사용자명과 암호를 전달하여
+확인하는 방식이다.
+
+//////////////////////////////////////////////////////////////////////////
+
+
+2)share 영역(실제 공유할 디렉토리 설정 영역)
+246 #==========Share Definitions=================
+
+[homes] ---> 홈디렉토리 설정(인증모드를 사용자로 할 때 사용)
+browseable = no 
+---> 윈도우에서 홈디렉토리가 보이게 할지를 결정하는 항목
+writable = yes
+---> 쓰기 권한 설정 항목
+
+
+
+[공유자원명] ---> 윈도우에서 접근 가능한 공유 목록
+path ---> 실제 공유 디렉토리 경로
+public ---> 모든 사용자에게 접근 허용
+browseable = yes
+writable = no
+
+
+마지막에 아래 추가
+[first_work]
+comment = Samba test
+path = /work
+writable = no
+browseable = yes
+guest ok = yes
+
+
+저장후 종료하기
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+<samba 공유디렉토리 지정 옵션>
+comment                         ---> 설명
+path                               ---> 공유 디렉토리를 절대경로로 지정
+writable, write ok              ---> 쓰기 허용
+read only                         ---> 읽기 전용
+browseable                      ---> 공유 디렉토리 목록을 보여줄 지를 지정
+public, guest ok                ---> 공유 디렉토리를 다른 사용자들이 이용하게 할지를 지정
+valid users                       ---> 공유 디렉토리를 로그인 할 수 있는 사용자 지정
+create mask, create mode   ---> 파일 생성시 기본권한 설정
+write list                          ---> 쓰기 가능한 특정 사용자 지정
+
+///////////////////////////////////////////////////////////////////////////////
+
+#mkdir  /work
+#ls  -ld  /work
+755 퍼미션 확인(drwxr-xr-x)
+#cd  /work
+#vi  first_samba.txt
+
+Samba Server Test
+
+위와 같이 입력하고 저장후 종료
+
+#testparm
+--->삼바 설정 체크 명령
+
+
+#service smb start
+#ps  -ef  |  grep  smbd
+#netstat  -ntlp  |  grep  smbd
+
+
+☞윈도우 에서 리눅스의 공유자원 접근하기
+[win2003]
+시작버튼-실행-[\\삼바서버아이피]
+--->텍스트 박스에 \\리눅스아이피 를 입력하고 엔터 누르기
+
+
+
+/////////////////////////////////////////////////////////////////////
+[first]
+#service  nmb  restart
+nmbd : netbios 이름 서비스 데몬
+/////////////////////////////////////////////////////////////////////
+
+
+<사용자 인증 공유 방식 삼바 테스트>
+
+1)삼바유저(User)로 사용할 계정을 시스템에 생성
+2)smbpasswd 이용하여 삼바유저 생성 및 암호 설정
+로컬 계정의 암호와 삼바 계정의 암호는 별개 임
+
+/////////////////////////////////////////////////////////////////////
+[리눅스]            <------삼바------>       [윈도우]
+
+         
+시스템 계정             삼바계정
+(/etc/passwd) 
+
+시스템암호              삼바암호
+(/etc/shadow)          
+              
+/////////////////////////////////////////////////////////////////////
+
+
+[first]
+#adduser  samba1
+--->시스템 계정 생성
+#smbpasswd  -h
+도움말 확인
+
+#smbpasswd  -a  samba1
+1234
+1234
+--->삼바 계정 생성
+
+삼바 사용자는 passdb.tdb 파일에 저장되며
+이 파일은 데이타베이스 파일이므로 삼바 사용자는 아래 명령어로 확인을 한다.
+
+#net  lookup  name  samba1
+--->삼바 계정 확인
+
+
+#cd  /etc/samba
+#vi  smb.conf
+[global]
+#------------- Standalone Server Options ------------------
+
+101    security = user (share 에서 user 로 변경)
+102    passdb  backend = tdbsam
+
+새로운 공유 자원 추가)
+아래 내용 마지막에 추가
+[public]
+comment = samba public dir
+path = /samba
+browseable = yes
+guest ok = yes
+writable = yes
+
+저장후 종료
+
+
+#mkdir  /samba
+#chmod  777  /samba
+#service  smb  restart
+
+
+[win2003]
+시작-실행-[\\리눅스아이피 입력]
+
+로그인창 나오면 아이디와 암호 입력
+아이디는 samba1
+암호는 samba1 의 암호 입력
+
+
+samba 접속 종료
+도스창 실행
+C:\>net  use 
+
+C:\>net  use  \\아이피\IPC$  /delete
+---> 세션(연결정보) 삭제
+
+C:\>net  use
+
+▣실습
+1. win2003 에서 C:\MyDATA 폴더를 공유하고 second 리눅스에서 CIFS 방식으로 마운트 테스트
+2. second 리눅스에서 아래 조건을 만족하도록 삼바 서버구축
+1) 사용자 인증 방식(계정은 samba2 암호는 1234 사용)
+2) 공유 디렉토리 : /work
+3) win2003 에서 /work 폴더에 쓰기가 가능하도록 설정
+
+/////////////////////////////////////////////////////////////////////
+[second]
+#yum  -y  install  samba
+#cd  /etc/samba
+#vi  smb.conf
+74 workgroup = ANDYLEC
+75 server string = Second Samba Server
+77 netbios name = Secondsamba
+101    security = user 
+마지막 부분에 아래 추가
+[second_work]
+comment = Samba test
+path = /work
+writable = yes
+browseable = yes
+guest ok = yes
+#mkdir  /work
+#chmod  777  /work
+#adduser  samba2
+#smbpasswd  -a  samba2
+1234
+1234
+#net  lookup  name  samba2
+#service  smb  start
+
+/////////////////////////////////////////////////////////////////////
+
+
+
+

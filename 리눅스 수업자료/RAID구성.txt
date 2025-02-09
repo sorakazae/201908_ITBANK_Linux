@@ -1,0 +1,229 @@
+리눅스 에서 RAID 작업 구성
+1. 파티셔닝 작업
+fdisk /dev/sdb<->sdi 동일하게 작업..
+command : n
+command action : p
+partition number(1-4) :1
+First cylinder enter
+Last  cylinder enter
+command : t
+Hex code : fd(Linux raid autodetect)
+command : p
+command :w 
+
+2. ls /dev/sd* 확인
+3. raid0구축 
+ls /dev/md*
+md0,1,5,6,10 ->  raid 전용 디바이스
+mknod /dev/md0 b 9 0
+b: Block Device 장치
+9 : md 장치의 주 번호
+0 : raid 0번쨰 장치...
+
+4. raid 구성 명령어 : mdadm
+mdadm --create /dev/md0 --level=0 --raid-devices=2 /dev/sdb1 /dev/sdc1
+--create /dev/md0 : md0 장치에 RAID를 생성
+--level=0 :RAID-0 지정
+--raid-devices=2 /dev/sdb1 /dev/sdc1
+2개의 하드디스크를 사용한다..
+
+mdadm --detail --scan 
+raid 장치에 대해서 상세 정보
+mdadm --query --detail /dev/md0 -> 상세정보 출력
+만들어진 Raid 레이드 정보 확인..  
+
+5. 파티션 장치 포맷
+mkfs.ext3 /dev/md0
+
+6. 마운트 디렉토리 
+mkdir /raid0data
+mount /dev/md0 /raid0data 
+df -T 확인
+
+
+--create /dev/md0 : md0 장치에 RAID를 생성
+--level=0   :RAID 0를 지정
+--raid-devices=2 /dev/sdb1 /dev/sdc1 :  2개 의 하드디스크를 사용하여, 이어서 나오는 것은 장치 이름
+
+mdadm --stop  /dev/md0 -> RAID 장치인 /dev/md0을 중지
+mdadm --query --detail /dev/md0 장치의 상세한 내역을 출력
+----------------------------------------------
+Raid-1 
+1. mknod /dev/md1 b 9 1
+ls /dev/md1
+2. 위의 과정과 동일
+mdadm --create /dev/md1 --level=1 --raid-devices=2 /dev/sdd1 /dev/sde1
+mdadm: array /dev/md1 started.
+mdadm --detail --scan
+mkfs.ext3 /dev/md1
+mkdir /raid1data
+mount /dev/md1 /raid1data
+df -T 확인
+
+
+Raid-5 
+1. mknod /dev/md5 b 9 5
+ls /dev/dm1
+2. 위의 과정과 동일
+mdadm --create /dev/md5 --level=5 --raid-devices=4 /dev/sdf1 /dev/sdg1 /dev/sdh1 /dev/sdi1
+mdadm: array /dev/md1 started.
+mdadm --detail --scan
+mkfs.ext3 /dev/md5
+mkdir /raid5data
+mount /dev/md5 /raid1data
+df -T 확인
+
+--fstab에 등록
+/dev/md0 /raid0data ext3 defaults 1 1
+/dev/md1 /raid1data ext3 defaults 1 1
+/dev/md5 /raid5data ext3 defaults 1 1
+
+--각 마운트 디렉토리로 파일 생성
+cp install.log /raid0data/test
+cp install.log /raid1data/test
+cp install.log /raid5data/test
+
+에러 사항 -> 하드디스크 5, 7 삭제..
+raid-1 -> scsi0:4 삭제
+raid-5 -> scsi0:6 삭제 ..
+내결함성의 여부 확인...
+df -T 마운트 목록이 그대로 존재하면 내결함성 허용
+ls /raid1data-> test 문서 확인
+ls /raid5data -> test 문서 확인
+
+5. 디스크 삭제 확인
+mdadm --query --detail /dev/md1
+mdadm --query --detail /dev/md5
+
+6.raid1과 raid5 원상 복구..
+1.init 0 -> 종료
+2. 복구용 하드디스크 2개 추가후 부팅...
+3. 추가된 하드디스크 파티셔닝 작업
+ls /dev/sd*
+/dev/sde /dev/sdg
+fdisk /dev/sde 
+fdisk /dev/sdg
+command : n
+command action : p
+partition number(1-4) :1
+First cylinder enter
+Last  cylinder enter
+command : t
+Hex code : fd(Linux raid autodetect)
+command : p
+command :w 
+ls /dev/sd* -> 논리디스크 생성 확인
+/dev/sde1 /dev/sdg1 -> 확인...
+
+4. raid1 에 복구 디스크 /dev/sde1
+mdadm /dev/md1 --add /dev/sde1
+mdadm --query --detail /dev/md1 -> 복구 확인
+
+
+5. raid5 에 복구 디스크 /dev/sdg1
+mdadm /dev/md5 --add /dev/sdg1
+mdadm --query --detail /dev/md5 -> 복구 확인
+
+
+--raid0 문제 발생 테스트...
+(내결함성을 허용하지 않기 때문에 절대 부팅이 되지 않기 때문에 centos 원본 시디로 복구모드에서
+복원)
+1.고장 생성 : 디스크3번  scsi0:2 삭제....
+fsck.ext3:...../dev/md0 ->FAILED ->에러
+
+2. centos 5.x 버전 시디로 복구모드로 부팅해서 복구 
+3. 부팅시 F2 Cmos 모드로 시작
+메뉴 : Boot 클릭-> 부팅순서를 CD-Rom drive 설정->exit에서 환경 저장
+4. cd 부팅 
+F5-Resure -> 복구모드
+boot : linux rescue 입력 후 엔터
+언어선택 : English
+키보드 타입 : us		
+네트워크 세팅 : no
+Rescue 모드에서 자동으로 마운트가 걸리는 디렉토리
+/mnt/sysimage -> 복구마운트지점
+continue 클릭
+
+vi /mnt/sysimage/etc/fstab
+# /dev/md0 /raid0data ext3 defaults 1 1 <-주석처리
+:wq <- 저장
+
+원본 시디 제거 후 리눅스로 부팅...
+
+5. raid-0 제거 확인
+mdadm --detail --scan
+md1, md5 Raid만 확인 가능 raid0는 제거...
+
+6 복구 
+ls /dev/sd* -> /dev/sdc
+fdisk /dev/sdc
+command : n
+command action : p
+partition number(1-4) :1
+First cylinder enter
+Last  cylinder enter
+command : t
+Hex code : fd(Linux raid autodetect)
+command : p
+command :w 
+ls /dev/sd* -> 논리디스크 생성 확인
+/dev/sde1 /dev/sdc1 -> 확인...
+
+4. rm -ft /dev/md0 -> 디바이스 제거
+   mdadm -r /dev/md0 -> raid0제거 ..
+
+5. mknod /dev/md0 b 9 0
+mdadm --create /dev/md0 --level=0 --raid-devices=2 /dev/sdb1 /dev/sdc1
+---------------------------------------------
+raid10(1+0) ->
+단점 : 미러볼륨 때문에 용량이 반으로 감소
+장점 : 읽기/쓰기 속도가 향상
+(속도향상 + 신뢰성) 
+raid 0 -> 미러볼륨
+raid 1 -> 스트라이프 볼륨
+
+1. mknod /dev/md10 b 9 10
+2. mdadm --create /dev/md10 --level=10 --raid-devices=4 /dev/sdb1 /dev/sdc1 /dev/sdd1 /dev/sde1 
+3. mdadm --detail --scan
+4. mkfs.ext3 /dev/md10
+5. mkdir /raid10data
+6. mount /dev/md10 /raid10data
+7 df -T 확인
+8 vi /etc/fstab
+/dev/md10 /raid10data ext3 defaults 1 1
+
+에러 상황 구현 하고 내결함성 확인..
+1.scsi0:2, scsi0:3 제거 /dev/sdc /dev/sdd 후 부팅..
+2. df로 확인이 가능
+3. ls /raid10data/test 있는지 확인
+4. mdadm --query --detail /dev/md10 
+5. 복구 용도로 사용할 하드디스크 2개 추가..
+6. 파티셔닝 작업 : fdisk /dev/sdc /dev/sdd
+7. mdadm /dev/md10 --add /dev/sdc1 /dev/sdd1
+6. 추가 확인
+mdadm --query --detail /dev/md10 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+

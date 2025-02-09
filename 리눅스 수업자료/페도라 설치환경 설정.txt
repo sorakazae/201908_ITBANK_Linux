@@ -1,0 +1,116 @@
+공통적으로 해야할 것들
+1. c:\가상머신 폴더 생성
+2. 하위폴더 :  페도라 서버, 페도라 클라이언트 , 페도라서버(B), 윈도우즈 폴더 생성
+
+페도라 서버 설치
+저장 폴더 : C:\가상머신\페도라서버
+네트워트 타입 : NAT: used to share the host's IP address
+메모리 : 256M
+하드디스크 : IDE 16G
+AUDIO : 불필요
+FLOPPY: 불필요
+페도라 설치 유형 : WORKSTATION
+IP 주소 : 192.168.0.100
+네트워크 정보 :
+넷마스크 : 255.2552.255.0
+게이트웨이 : 192.168.0.2
+DNS : 192.168.0.2
+/boot -> 부팅관련 파일 /swap ->리눅스 가상 메모리(1024) /루트 파티션(나머지 전부 파티션)
+disk druid 수동 파티션 -> 파일 시스템 유형 : swap : 1024. 
+마운트 지점 : / : 최대 가능한 용량으로 채움
+->
+워크스테이션 기본 설치... -> 방화벽 사용 안함 ->SELinux 사용 안함
+
+설치 후 VMWARE-Tools 설치방법
+vm->install vmware tools install 선택 -> vmware tools 5.0.0-13.124.i386.rpm -> 마우스 오른쪽 클릭 눌러서 Install Packages 프로그램으로 열기를 선택 ->root로 로그인 하지 않는 경우에는 root의 암호를 물어봄 -> 시스템 준비 완료 창이 뜬다 -> 계속 진행을 클릭 ->진행 화면 종류 후 -> 터미널 창을 열어서 vmware-config-tools.pl 명령을 실행해서 Enter 키를 몇번 누르면 설치가 완료된다..
+
+
+
+페도라 서버 클라이언트
+저장 폴더 : C:\가상머신\페도라클라이언트
+네트워트 타입 : NAT: used to share the host's IP address
+메모리 : 128m
+하드디스크 : IDE 4G
+AUDIO :  필요
+FLOPPY: 불필요
+페도라 설치 유형 : 개인용 데스크탑
+IP 주소 : 192.168.100.201
+네트워크 정보 :
+넷마스크 : 255.2552.255.0
+게이트웨이 : 192.168.100.2
+DNS : 192.168.100.2
+
+설치 후 VMWARE-Tools 설치방법
+vm->install vmware tools install 선택 -> vmware tools 5.0.0-13.124.i386.rpm -> 마우스 오른쪽 클릭 눌러서 Install Packages 프로그램으로 열기를 선택 ->root로 로그인 하지 않는 경우에는 root의 암호를 물어봄 -> 시스템 준비 완료 창이 뜬다 -> 계속 진행을 클릭 ->진행 화면 종류 후 -> 터미널 창을 열어서 vmware-config-tools.pl 명령을 실행해서 Enter 키를 몇번 누르면 설치가 완료된다..
+
+개인용데스크톱 기본 설치
+
+페도라 서버B 설치
+저장 폴더 : C:\가상머신\페도라서버B
+네트워트 타입 : NAT: used to share the host's IP address
+메모리 : 128M
+하드디스크 : IDE 8G
+SWAP : 512 
+나머지 / 나머지 공간 모두 설정
+AUDIO : 불필요
+FLOPPY: 불필요
+페도라 설치 유형 : WORKSTATION(별도 설정)
+IP 주소 : 192.168.100.200
+네트워크 정보 :
+넷마스크 : 255.2552.255.0
+게이트웨이 : 192.168.100.2
+DNS : 192.168.100.2
+
+워크스테이션 -> 설치할 소프트웨어 패키지 사용자 설정하기 -> x윈도우 시스템, Gnome 데스크톱 환경, 그래픽인터넷, 사무/생산성, 사운드와 비디오, 그래픽, 게임과 오락 -> x소프트웨어 개발 , Gnome 소프트웨어 개발 -> OFF 시키고 설치 진행
+---------------------------------------------------------------
+터미널 명령어
+시스템 설정
+터미널 열기 ->
+system-config-display ->
+system-config-network
+데스크톱 -> 환경 설정 -> 화면 해상도 : 800 * 600
+
+
+윈도우즈 클라이언트 설치
+저장 폴더 : C:\가상머신\윈도우즈 클라이언트
+네트워트 타입 : NAT: used to share the host's IP address
+메모리 : 128M
+하드디스크 : IDE 4G
+AUDIO : 불필요
+FLOPPY: 불필요
+IP 주소 : 192.168.100.202
+네트워크 정보 :
+넷마스크 : 255.2552.255.0
+게이트웨이 : 192.168.100.2
+DNS : 192.168.100.2
+프로그램 ->인터넷 ->firefox web brower
+ifconfig
+호스트 pc
+네트워크-> 속성 ->VMware 8 -> 상태보기 : 192.168.100.1
+ping 192.168.100.1
+ctrl + c 모든 명령어 중지///
+호스트 os : 192.168.100.1
+알 ftp
+ftp 192.168.100.1
+anonymous
+암호 : 엔터
+ftp>ls
+?
+mkdir itbank 디렉토리 생성
+pwd -> 현재의 위치 정보
+/
+cd /itbank
+cd .. -> 상위디렉토리
+cd / -> 루트 디렉토리
+get picture.bmp
+
+mget *
+mget p*
+ftp>quit, bye
+gedit -> 편집기
+shift + space 한/영 키변환 
+cat test2 ->view
+put test2
+
+일반설치..
+

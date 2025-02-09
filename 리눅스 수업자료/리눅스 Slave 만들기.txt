@@ -1,0 +1,151 @@
+1. 리눅스에서 주영역 생성해서 windows 2003에서 보조 영역 만들기
+bann.com -> windows 2003 server에 보조 영역 생성
+win2003 192.168.0.150
+255.255.255.0
+GW 없음
+기본 DNS 192.168.0.100 
+
+bann.com -> 주영역 생성
+1. yum -y install caching-nameserver 설치
+rpm -qa  caching-nameserver
+rpm -qa bind
+
+2. gedit /etc/named.conf
+영역전송 가능 -> 
+named.conf 
+# vi  /etc/named.rfc1912.zones
+options {
+allow-transfer { 192.168.0.150;};
+};
+위의 같이 optinos 에서 지정하면 모든 도메인에 정의 되며(권장) 위의 지정한 192.168.0.150 로만 보조 영역 전송이 가능
+
+아래와 같이 특정 도메임에 대해서만 zone-transfer를 제한할 수 있습니다.
+
+zone "bann.com" IN {
+	type master;
+	file "bann.com.zone"
+	allow-transfer {192.168.0.150 ;};
+};
+
+zone "bann.com" IN {
+	type master;
+	file "bann.com.zone"
+	allow-update { 192.168.0.150;};
+};
+allow-update 의 경우 192.168.0.150 에 동적 업데이트 허용.
+모든 dns 서버에서 보조 dns  서버 구성 가능(보안성 취약}
+
+2. windows 2003 에서 보조 dns  생성
+관리도구 -> dns -> 정방향 조회 영역 ->  새 영역 만들기 -> 보조 영역 체크 -> 영역이름 : bann.com -> 마스터  dns  서버 : ip 주소 192.168.0.100 추가 -> 다음 -> 마침
+  
+영역 전송이 안 이루어질 경우 bann.com ->  속성 -> 영역전송 -> 영역 전송 허용 체크->
+다음 서버로만 : 192.168.0.100 추가 -> 확인
+};
+2. 호스트 변경 : gedit /etc/hosts
+192.168.100.150 bann.com
+3. gedit /etc/resolv.conf
+service network restart
+service named restart
+Windwos 서버에서 설정
+1. DNS -> bann.com  영역 -> 속성 -> 영역 전송 : 192.168.100.105 리눅스 서버로 전송한다...
+
+2. windows 2003 server 주영역 생성하고 리눅스에서 보조 영역 만들기
+1. 관리도구 -> dns -> 정방향 조회 영역 ->  새 영역 만들기 -> 주 영역 체크 -> 영역이름 : joon.com -> 영역파일 : joon.com.dns -> 마침 
+
+2. joon.com -> 속성 -> 영역전송 탭 클릭 -> 영역전송허용 체크 -> 다음 서버로만 체크 : 192.168.0.100 추가 -> 마침
+joon.com -> 속성 -> 이름 서버 클릭 -> 편집 : joon.com <-> ip : 192.168.0.150 ->마침
+joon.com ->오른쪽 클릭 -> 새 호스트 ->이름 : www<-> Ip주소 : 192.168.0.150 호스트 추가
+3.
+Linux에서 보조 영역 만들기
+Url경로 : http://blog.naver.com/su9650?Redirect=Log&logNo=40093345181 -> 리눅스 DNS Server 이론 및 실습
+(1) /etc/named.rfc1912.zones 파일 구성
+Slave 설정
+Master 의 named.conf 설정과 똑같이 구성 후 아래 항목만 변경해 주면 된다..
+file "도메인.slave.zone"
+masters {ip주소;}
+(2) /etc/named.conf 해제
+zone "joon.com" IN {
+type slave;
+file "slaves/joon.com.slave.zone";
+masters {192.168.0.150;};
+};
+
+(3) 방화벽 설정
+TCP 950 허용
+UDP 950 허용
+(4) dns 서버 Master 등록
+# vi /etc/resolv.conf
+nameserver 192.168.0.150
+(5) 데몬 재시작 
+service named restart
+(7) service named restart 하면  자동으로 보조 영역이 생성됨...
+/var/named/chroot/var/named/slaves 
+보조영역이 자동으로 생성 ->미리 영역 파일을 생성할 필요 없음...
+
+구성에 사용된 IP 정보
+Master : 192.168.0.150
+slave : 192.168.0.100
+(8) DNS 정상 동작 확인
+Master 서버로 부터 정상적으로 zone 파일을 update 받고 있다면 /var/named/slaves/Master도메인명.slave.zone 파일 생성 확인 가능
+slaves/joon.com.slave.zone
+-----------------------------------------------------------------
+[3] Windows DNS에서 위임 설정해서 리눅스에서 처리..
+Windows DNS: centos.joon.com -> Linux Dns:centos.joon.com 위임 받아서 리눅스에서 처리....
+1. Windows -> DNS ->centos.joon.com 위임 처리
+1.1 www.centos.joon.com 호스트 생성 -> 192.168.0.100
+
+1,2 joon.com -> 새위임 ->위임된 도메인 : centos -> 이름 서버 : 추가:centos.joon.com ip주소 : 192.168.0.100 ->추가-> 마침
+2. 리눅스에서 위임된 centos.joon.com 도메인 처리...
+2.1 gedit -> /etc/named.rfc1912.zones
+zone "centos.joon.com" IN {
+	type master;
+	file "centos.joon.com.zone";
+	allow-update {none; };
+};
+2.2
+cd /var/named 
+cp localhost.zone -> centos.joon.com.zone
+gedit ->centos.se4.vm.
+
+$TTL	86400
+
+@		IN SOA	centos.joon.com       root.centos.joon.com (
+	42		; serial (d. adams)
+	3H		; refresh
+	15M		; retry
+	1W		; expiry
+	1D )		; minimum
+
+	        IN NS		centos.joon.com.
+	 	IN A		192.168.100.150
+www		IN A		192.168.100.150	
+2.3 service named restart, service network restart		
+ping www.centos.joon.com
+
+
+라운드 로빈 방식 (웹서버 다중화, 부하분산)
+www IN CNAME webserver.joon.vm.
+webserver 100 IN A 192.168.0.10
+          100 IN A 192.168.0.100
+          100 IN A 192.168.0.200
+
+확인 
+nslookup
+>www.joon.vm 
+192.168.0.10 192.168.0.200 192.168.0.100
+>www.joon.vm
+192.168.0.200 192.168.0.10 192.168.0.100
+>www.joon.vm
+192.168.0.100 192.168.0.200 192.168.0.10
+
+
+
+
+
+
+
+
+
+
+
+

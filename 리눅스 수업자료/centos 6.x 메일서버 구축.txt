@@ -1,0 +1,197 @@
+[CentOS6] Sendmail (smtp) + Dovecot (pop3) 설치 구성
+
+1. sendmail 설정 (센트OS 5.3기준)
+
+
+
+- 먼저 rpm -qa |grep sendmail 명령으로 sendmail이 설치되어 있는지 확인, 
+
+- 설치할 팩키지 -> yum install sendmail-cf-8.13.8-2.el5
+
+- Pop3를 사용할려면 imap 팩키지가 설치되어 있어야 함(dovecot) -> 기본 imap에 비해 보안향상
+
+- yum install dovecot-1.0.7-7.el5.i386
+
+
+
+
+
+2. dovecot 설정
+
+*-/etc/dovecot.conf 화일 변경
+
+20라인 protocols = pop3 pop3s imap imaps 주석제거
+
+39라인 listen = [::] 주석제거
+
+
+
+[test]# service dovecot start
+
+Dovecot Imap (을)를 시작 중:                               [  OK  ]
+
+
+
+[test]# telnet localhost 110 => 110번 pop3 접속확인
+
+Trying 127.0.0.1...
+
+Connected to localhost.localdomain (127.0.0.1).
+
+Escape character is '^]'.
+
++OK Dovecot ready.
+
+
+
+
+
+3. sendmail 설정파일 위치 
+
+
+
+*smtp인증기능 추가위해 /etc/mail/sendmail.mc 52,53라인 주석제거 확인 후
+
+TRUST_AUTH_MECH(`EXTERNAL DIGEST-MD5 CRAM-MD5 LOGIN PLAIN')dnl
+
+define(`confAUTH_MECHANISMS', `EXTERNAL GSSAPI DIGEST-MD5 CRAM-MD5 LOGIN PLAIN')dnl
+
+
+m4 /etc/mail/sendmail.mc > /etc/mail/sendmail.cf ->바뀐것을 적용한다.
+
+*적용한후 - /etc/mail/sendmail.cf : 센드메일의 가장 기본적인 설치파일 -> 265라인에 addr 제거 
+(O DaemonPortOptions=Port=smtp, Name=MTA 수정후임)
+
+- 89라인 Cwlocalhost => 주석처리
+- /etc/mail/access : 릴레이 허용파일,기본적으로 로컬만 허용, 허용할 IP,domain추가 한다.
+# by default we allow relaying from localhost...
+Connect:localhost.localdomain           RELAY
+Connect:localhost                       RELAY
+Connect:127.0.0.1                       RELAY
+Connect:jccafe.com                         RELAY
+Connect:mail.jccafe.com                    RELAY
+
+*엑세스 파일 교체되면..
+#makemap hash /etc/mail/access < /etc/mail/access 실행
+- /etc/mail/local-host-names : 메일을 수신할 호스트이름 등록
+jccafe.com
+
+* 인증을 위한  SASL 라이브러리가 설치되어 있어야 함 
+cyrus-sasl-md5-2.1.19-5.EL4
+cyrus-sasl-2.1.19-5.EL4
+cyrus-sasl-plain-2.1.19-5.EL4
+cyrus-sasl-devel-2.1.19-5.EL4
+
+[root@test]# service saslauthd start 실행
+
+
+4. sendmail 데몬 시작 / 확인
+
+- service sendmail start 또는 init/sendmail start
+- 마지막으로 telnet localhost 25 로 접속해서 아래와 같은 화면이 나오면 정상적으로 SMTP데몬이 돌고 있다.
+* 인증확인
+[test]# telnet localhost 25
+Trying 127.0.0.1...
+Connected to localhost.localdomain (127.0.0.1).
+Escape character is '^]'.
+220 test ESMTP Sendmail 8.13.8/8.13.8; Sun, 26 Jul 2009 10:03:01 +0900
+ehlo localhost
+250-jccafe.com Hello test [127.0.0.1], pleased to meet you
+250-ENHANCEDSTATUSCODES
+250-PIPELINING
+250-8BITMIME
+250-SIZE250-DSN
+250-ETRN
+250-AUTH GSSAPI DIGEST-MD5 CRAM-MD5 LOGIN PLAIN
+250-DELIVERBY
+250 HELP
+
+
+
+<Trouble Shooting>
+
+1.
+
+The original message was received at Wed, 23 Nov 2011 11:05:06 +0900
+ from [10.234.214.38]
+
+ ----- The following addresses had permanent fatal errors -----
+
+  (reason: 550 5.7.1 ... Relaying denied. Proper authentication required.) 
+
+----- Transcript of session follows ----- 
+.... while talking to mail.jccafe.com.: 
+>>> DATA 
+<<< 550 5.7.1 ... Relaying denied. Proper authentication required. 
+550 5.1.1 ... User unknown 
+<<< 503 5.0.0 Need RCPT (recipient) 
+
+=====> <Slove> # service saslauthd start
+
+
+
+2.
+
+The original message was received at Wed, 23 Nov 2011 20:28:28 +0900 
+from mailtx2.nate.com [117.53.114.132] 
+
+----- The following addresses had permanent fatal errors ----- 
+
+(reason: 553 5.3.5 system config error) 
+
+----- Transcript of session follows ----- 
+553 5.3.5 jccafe.com. config error: mail loops back to me (MX problem?)
+554 5.3.5 Local configuration error 
+
+=====> <Slove> # vi /etc/mail/local-host-names 
+# local-host-names - include all aliases for your machine here.
+jccafe.com 
+출처:CentOS5에서 sendmail + pop3 + smtpauth 설정 방법
+
+
+
+<설치 환경>
+
+CentOS 6.3 x64
+sendmail 8.14.408.el6
+dovecot 2.0.9-2.el6_1.1      <= centos 5.x 는 아래 1번 링크에 dovecot 참고
+
+
+
+1. sendmail 설치
+아래 링크 참조
+; http://jonnychoe.egloos.com/5239346
+
+
+
+2. dovecot (pop3) 설치       <= centos 6.x 설치 시
+
+#yum install dovecot
+
+
+3. dovecot 환경설정
+
+#vi /etc/dovecot/dovecot.conf
+# Protocols we want to be serving.
+
+protocols = imap pop3 lmtp          <= 주석제거
+
+# A comma separated list of IPs or hosts where to listen in for connections.
+# "*" listens in all IPv4 interfaces, "::" listens in all IPv6 interfaces.
+# If you want to specify non-default ports or anything more complex,
+# edit conf.d/master.conf.
+listen = *             <= 주석제거 및 ipv4만 사용한다면 ", ::" 제거
+
+
+4. conf.d/ 인증 및 메일 부분 수정
+
+#vi 10-auth.conf
+
+#disable_plaintext_auth = yes
+disable_plaintext_auth = no           <= 수정 안하면 outlook 실행 시 995 포트(SSL) 사용
+
+
+#vi 10-mail.conf
+
+#mail_location =
+mail_location = mbox:~/mail:INBOX=/var/mail/%u

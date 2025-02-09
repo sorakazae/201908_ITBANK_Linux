@@ -1,0 +1,46 @@
+1 네트워크 카드 : dns : 192.168.100.100
+2. service network restart
+3. service named start
+4. gedit /etc/named.conf
+zone "john.com" IN {
+	type master;
+	file "john.com.zone";
+	allow-update { none; };
+};
+5.service named restart
+6.cd /var/named
+7.cp localhost.zone john.com.zone
+8. gedit john.com.zone
+$TTL	86400
+$ORIGIN john.com.
+@		IN SOA	@       root (
+					42		; serial (d. adams)
+					3H		; refresh
+					15M		; retry
+					1W		; expiry
+					1D )		; minimum
+
+	        IN NS		@
+	 	IN A		192.168.100.100
+		IN AAAA		::1
+www		IN A 	192.168.100.100
+ftp 		IN A 	192.168.100.100
+
+9. service network restart
+10.service named restart
+ping www.john.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

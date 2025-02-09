@@ -1,0 +1,635 @@
+[참조] http://jetzt.tistory.com/328
+[참조] http://dev.jpblog.co.kr/25
+
+@@ SAMBA
+
+-> Samba는 Linux와 Windows간 파일과 프린터 공유를 할수 있게
+   해주는 소프트웨어임. 리눅스를 파일서버로도 사용할 수 있으며
+   대부분의 리눅스 배포판에 포함되어 있음.
+-> 삼바는 기존의 네트워크 환경에 공존하는 이종 운영체제를 하나로 
+   통합하여 관리하며 사용할 수 있도록 허용함.
+   윈도우, mac, solaris, linux, freeBSD, HP-UX 등과 같은
+   OS가 혼재할 경우 유일한 대안이 됨.
+-> 삼바는 주 도메인 인증 관리서버로 동작할 수도 있음. 즉 여러 윈도우
+   그룹을 묶기위해 사용하는 윈도우 서버를 대신할 수 있음.
+
+
+! Windows network
+
+. NetBIOS -> 윈도우 컴퓨터들끼리의 자료교환에 필요한 프로토콜.
+             네트워크상에서 컴퓨터를 찾아가기위해 이름을 사용.
+. NetBEUI -> NetBIOS를 이용하여 컴퓨터의 이름으로 네트워크 통신.
+             소규모네트워크에서 사용가능하며 라우팅이 불가능.
+. NBT-> 네트워크간 NetBIOS를 사용하기위해 TCP/IP에 올려 사용.
+        라우팅 가능해짐.
+. Computer name -> 브로드캐스팅된 자신의 이름으로 네트워크 통신
+
+
+! Windows network 구성
+
+. Workgroup Model-> 보안관리를 각 컴퓨터자신이 수행.
+  다른 컴퓨터의 자원을 사용하려면 개별 인증을 받아야 함.
+  설계가 쉬운대신 계정 관리가 어려움.
+. Domain Model -> 네트워크의 다른 시스템의 자원을 사용하기
+  위해 도메인컨트롤러의 인증을 받은 Access Token을 이용하여
+  다른 시스템의 자원을 사용하게 되는 중앙집중식 구조.
+
+
+! Samba
+
+-> 윈도우에서 리눅스 서버의 HDD와 네트워크 프린터 자원을
+   공유할 수 있도록 하는 소프트웨어 패키지임.
+   리눅스에서 윈도우쪽 파일 시스템과 프린터로도 접근할 
+   수 있게 되는데 이는 삼바서버가 SMB와 CIFS 프로토콜을
+   지원해 주기때문임.
+
+
+! SMB(Samba Message Block)
+
+-> 윈도우 시스템이 다른 시스템의 디스크나 프린터와 같은 자원을
+   공유할 수 있도록 하기 위해 마이크로소프트사와 인텔사에서 개발함.
+   따라서 SMB는 OS/2, NT, WIN9x를 사용하는 컴퓨터끼리 파일
+   공유 등의 서비스를 구현하는데 사용되는 프로토콜임.
+   또한 이는 TCP/IP 기반의 NetBIOS 프로토콜을 이용하기때문에
+   이 프로토콜은 유닉스의 네트워크 구조와 유사함.
+   윈도우 중심의 네트워크 환경에서는 필수적이라 할수 있음.
+
+
+! CIFS(Common Internet File System)
+
+-> SMB 파일 공유 프로토콜의 확장된 버전임. SMB 프로토콜위에
+   DNS를 이용할 수 있도록 해주며 윈도우와 유닉스 환경을
+   동시에 지원하는 인터넷의 표준 파일 규약임.
+   폐쇠적인 SMB 프로토콜과는 달리 CIFS는 여러 유닉스 업체가
+   참여하여 규약을 정의하였음.
+
+
+! CIFS를 이용한 windows 폴더 공유
+
+-> 윈도우의 삼바공유자원을 리눅스에서 마운트.
+
+1) Windows 컴퓨터에서 특정폴더(share)에 대한 공유 설정.
+2) Linux에서 CIFS protocol을 이용한 마운트.
+# mount -t cifs 192.168.0.100:share  /win_xp
+# mount -> 마운트 정보 확인. 또는 df 명령어 사용.
+# chmod 777 /winxp
+chmod: changing permissions of `/winxp': 허가 거부
+
+
+! SAMBA 서버 패키지 설치
+
+# rpm -qa | grep samba
+samba        -> 삼바 서버
+samba-client -> 삼바 클라이언트
+samba-common -> 삼바 서버/클라이언트에 필요
+samba-swat   -> 삼바 웹 관리 설정도구
+
+# yum -y install samba -> 설치
+
+# service smb {start|stop|restart|status}
+# service nmb {start|stop|restart|status}
+. nmbd -> WINS와 NetBIOS의 네임서버기능 모방하여 네임서비스제공.
+. smbd -> 삼바 서버와 클라이언트간 공유 리소스 운영.
+  서비스 접속을 하려는 클라이언트에 대해 파일, 프린터 탐색서비스 제공
+. 137,138,139번 포트사용함. 따라서 iptables에 다음을 추가하면 됨.
+# vi /etc/sysconfig/iptables
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 137:139 -j ACCEPT
+-A INPUT -m state --state NEW -m udp -p udp --dport 137:139 -j ACCEPT
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 445 -j ACCEPT
+
+
+
+! Samba Package 주요 파일
+
+/usr/sbin/smbd      -> 삼바서버 데몬
+/usr/sbin/nmbd      -> NetBIOS 서비스데몬
+/etc/samba/smbusers -> 삼바 사용자 파일
+/etc/samba/smbpasswd-> 삼바 사용자 패스워드 동록 프로그램
+/var/log/samba/     -> 삼바 로그 파일 디렉토리
+/usr/bin/testparm   -> 삼바 설정 파일 테스트 프로그램
+/etc/samba/smb.conf -> 삼바 설정 파일
+
+
+! smb.conf 파일에서 적용되는 변수 치환
+
+%s -> 현재 공유이름
+%P -> 현재 공유의 root 디렉토리
+%u -> 공유 사용자 이름
+%g -> 사용자 그룹명
+%U -> 클라이언트가 요청시 사용한 사용자 이름
+%G -> %U가 소속된 첫번째 그룹
+%H -> %u의 홈디렉토리
+%v -> 삼바 버전
+%h -> 삼바 서버가 실행되고 있는 컴퓨터의 호스트명
+%m -> 접속하는 컴퓨터의 NetBIOS 이름
+%L -> 서버의 NetBIOS이름
+%M -> 클라이언트의 인터넷 이름
+%N -> NIS 컴퓨터의 호스트명
+%p -> 현재 공유의 root 디렉토리
+%R -> 통신프로토콜 지정
+%d -> 현재 서버의 프로세스 번호
+%a -> 클라이언트 아키텍쳐
+%I -> 클라이언트 ip 주소
+%T -> 현재 날짜/시간
+
+
+! smb.conf 파일에서 공유할 디렉토리 설정값
+
+comment    -> 디렉토리 설명
+browesable -> 공유목록에 디렉토리를 보여줄지 결정
+writable   -> 쓰기 권한
+valid user -> 디렉토리에 접근가능한 사용자 지정
+path       -> 공유 디렉토리의 절대경로 지정
+guest ok   -> guest 사용자 접근 권한 설정
+printable  -> spool 파일을 지정할 것인지 설정
+read only  -> 읽기 전용
+public     -> 여러 사용자가 이용할 수 있도록 설정
+write list -> 쓰기 권한 부여할 사용자 또는 그룹 지정
+
+
+! Samba Test
+
+. Samba Server에서
+
+# mkdir /samba -> 서버에서 공유할 디렉토리 생성 및 모든 접근권한 부여.
+
+# vi /etc/samba/smb.conf
+
+#================ Global Settings ===============
+[global]
+workgroup = WORKGROUP        -> 윈도우의 컴퓨터 이름과 동일하게 입력
+server string = Samba Server -> 윈도우 클라이이언트에게 보여질 부연설명
+netbios name = MYSERVER
+
+# --------------- Standalone Server Options --------------
+        security = share        -> 패스워드 인증없이 접속
+;       passdb backend = tdbsam -> 주석 처리
+
+#================ Share Definitions =============
+
+[test]                      -> 공유될 폴더이름에 해당
+comment = samba public dir
+path = /samba
+browseable = yes
+guest ok = yes
+public = yes
+writable = yes
+
+~
+~
+:wq
+
+# service smb restart -> 환경 설정값 적용
+
+. Samba Client(Windows)에서
+
+-> Win+R -> \\[server_ip] 
+-> 공유된 서버의 폴더에 접근하여 데이터 업/다운로드 테스트
+
+
+
+
+
+! /etc/samba/smb.conf 환경설정
+
+#================= Global Settings ===============
+-> 글로벌 설정. 삼바서버가 공유하는 자원에 공통적으로 적용할 기본값 설정.
+        workgroup = MYGROUP
+        server string = Samba Server Version %v
+
+;       netbios name = MYSERVER
+
+;       interfaces = lo eth0 192.168.12.2/24 192.168.13.2/24
+;       hosts allow = 127. 192.168.12. 192.168.13.
+
+;	dos charset = euckr
+;	unix charset = UTF-8
+-> 윈도우에서 삼바서버 접속시 한글이 깨져보이는 경우 문자셋 적용.
+
+# ---------------- Logging Options -------------------
+-> 서버에 접속하는 각 컴퓨터들에 대한 로그파일 생성.
+        log file = /var/log/samba/log.%m 
+        # max 50KB per log file, then rotate
+        max log size = 50
+
+# ---------------- Standalone Server Options -----------------
+-> standalone server 구성시 설정
+        security = user
+        passdb backend = tdbsam
+
+
+. security 인증 레벨
+user   -> 사용자가 유효한 id와 pw 입력하여 접속.
+share  -> 삼바서버의 인증을 거치지 않고 접속.
+server -> 사용자 인증을 다른 삼바서버로부터 인증을 받고자 함.
+domain -> 삼바서버가 도메인 컨트롤러로 구성하여 사용자 인증.
+
+. passdb backend 패스워드 저장방식
+tdb      -> passdb.tdb 파일로 계정정보 저장. TDB(Trivial DB)
+smbpasswd-> smbpasswd 파일로 계정정보 저장. Samba Password
+ldap     -> 
+
+
+# ---------------- Domain Members Options -----------------
+-> 윈도우 서버로 도메인서버 구축 후 연동시 사용
+;       security = domain
+;       passdb backend = tdbsam
+;       realm = MY_REALM
+
+;       password server = <NT-Server-Name>
+
+
+# ---------------- Domain Controller Options ----------------
+-> 삼바서버를 도메인 서버로 구축시 사용되는 옵션임.
+-> 윈도우 서버로 도메인서버를 구축했다면 이 설정은 사용치 않음.
+
+;       security = user
+;       passdb backend = tdbsam
+
+;       domain master = yes
+;       domain logons = yes
+-> 서브넷에 있는 컴퓨터들의 리스트를 수집하여 도메인서버로 구축됨.
+-> 클라이언트들에 대해 도메인 로그온 서버 역할하게 됨.
+
+        # the login script name depends on the machine name
+;       logon script = %m.bat
+        # the login script name depends on the unix user used
+;       logon script = %u.bat
+;       logon path = \\%L\Profiles\%u
+        # disables profiles support by specifing an empty path
+;       logon path =
+-> 사용자별 로그인 스크립트작성하여 적용.
+
+;       add user script = /usr/sbin/useradd "%u" -n -g users
+;       add group script = /usr/sbin/groupadd "%g"
+;       add machine script = /usr/sbin/useradd -n -c "Workstation (%u)" -M -d /nohome -s /bin/false "%u"
+;       delete user script = /usr/sbin/userdel "%u"
+;       delete user from group script = /usr/sbin/userdel "%u" "%g"
+;       delete group script = /usr/sbin/groupdel "%g"
+
+
+# ---------------- Browser Control Options -------------------
+-> 삼바서버의 마스터 브라우저 설정.
+
+;       local master = no      -> 마스터 브라우저 역할을 하지 않음 설정.
+;       os level = 33          -> 마스터 브라우저 선출의 우선순위 결정.
+;       preferred master = yes -> 마스터 브라우저 선출되도록 작용.
+
+
+#------------------ Name Resolution ---------------------
+-> 삼바서버의 WINS서버 또는 WINS클라이언트 역할 설정.
+
+;       wins support = yes   -> nmbd에게 WINS서버 역할 설정
+;       wins server = w.x.y.z-> nmbd에게 WINS클라이언트 역할 설정
+;       wins proxy = yes     -> WINS클라이언트를 대신하여 name resolution
+
+;       dns proxy = yes
+-> DNS nslookup을 통해서 NetBIOS 이름을 ip 주소로 바꿀지 설정
+
+
+# ----------------- Printing Options ----------------------
+-> 삼바 프린터 설정
+
+        load printers = yes   -> 공유 프린터를 클라이언트에 제공
+        cups options = raw    -> cups 프린팅 시스템의 프린팅 옵션
+
+;       printcap name = /etc/printcap  -> 프린터 설정 경로 지정
+        #obtain list of printers automatically on SystemV
+;       printcap name = lpstat         -> 프린터 이름 지정
+;       printing = cups       -> 어떤 프린팅 시스템을 선택할지 지정
+
+
+#=================== Share Definitions =====================
+-> 공유디렉토리 설정
+
+[homes]
+        comment = Home Directories -> 디렉토리 설명
+        browseable = no   -> 공유이름을 브라우저에 표시(사용자명으로 표시)
+        writable = yes             -> 쓰기 허용
+       valid users = %S
+       valid users = MYDOMAIN\%S
+
+[printers]
+        comment = All Printers
+        path = /var/spool/samba
+        browseable = no
+        guest ok = no
+        writable = no
+        printable = yes
+
+        [netlogon]                      -> 도메인로그온 지원할 경우에사용.
+        comment = Network Logon Service
+        path = /var/lib/samba/netlogon  -> 사용자가 사용할 디렉토리위치
+        guest ok = yes  -> guest account 옵션에 설정된 사용자 로그인 허용
+        writable = no
+        share modes = no
+
+        [public]              -> 공유 디렉토리 설정
+        comment = Public Stuff
+        path = /home/samba    -> 사용자가 사용할 디렉토리 위치
+        public = yes          -> 누구나 접근 가능
+        writable = yes        -> 쓰기 권한 부여
+        printable = no
+        write list = +staff   -> 추가 쓰기가능 사용자 리스트 작성
+
+[myshare]
+        path = /home/myshare      -> 사용자가 사용할 디렉토리 위치
+        valid users = user1 user2 -> 접근 가능한 사용자
+        public = no               -> 누구나 접근 불가
+        writable = yes            -> 쓰기 권한 부여
+        create mask = 0644        -> umask 설정(파일 생성시 권한모드)
+
+
+
+
+
+! Samba 사용자 설정
+
+-> 삼바 사용자는 시스템에 미리 계정이 생성되어 있어야 함.
+
+# smbpasswd [option] [user_name] -> 삼바 사용자 생성
+-a -> 삼바 사용자 생성
+-d -> 삼바 사용자 다시 사용
+-n -> 패스워드 지정하지 않음
+-x -> 삼바 사용자 삭제
+
+
+! Samba 사용자 생성 후 윈도우 클라이언트로 부터 접속
+
+1) 삼바서버 사용자 생성
+2) 삼바서버의 /etc/samba/smb.conf 설정
+3) 검사
+
+
+1) 삼바서버 사용자 생성
+# smbpasswd -a user1
+New SMB password:
+Retype new SMB pasword:
+Added user user1.
+
+-> 기본설정이 tdbsam이므로 /var/lib/samba/private/passdb.tdb와
+   /var/lib/samba/private/secrets.tdb에 패스워드가 저장됨.
+
+# net lookup name user1   -> 생성된 삼바 사용자 확인.
+
+2) 삼바서버의 /etc/samba/smb.conf 설정
+[global]
+	security = user
+	passdb backend = tdbsam
+
+[home]
+	comment = Home Directories
+	browseable = no
+	writable = yes
+
+[public]
+	comment =samba public dir
+	path = /samba
+	bowseable = yes
+	guest ok = yes
+	public = yes
+	writable = yes
+~
+~
+:wq
+
+# service smb restart -> 설정값 적용
+
+# testparm            -> samba 설정값 출력
+
+# smbstatus           -> samba 접속사용자 목록 출력smb
+tes
+3) 검사
+-> Windows 클라이언트에서 서버로 접속 테스트.
+-> Win + R -> \\[svr_ip] -> id와 password 인증 후 접속되는지 확인.
+-> 접속 후 공유폴더 및 홈디렉토리에 데이터 업/다운로드 테스트.
+-> user1 홈디렉토리에 데이터 up/down load 되는지 확인.
+-> public 폴더에 데이터 up/down 되는지 확인.
+
+. 접속 종료(세션 연결 종료)
+c:\>net use
+c:\> net use \\192.168.0.1\IPC$ /delete-> 특정 세션 해제
+c:\> net use * /del                    -> 모든 세션 해제
+
+
+
+[실습]
+
+1) 삼바 서버로 접속할 수 있는 사용자 user11 생성
+2) 공유할 디렉토리를 /new_server로 생성
+3) 디렉토리의 접근권한을 777로 설정
+4) /etc/samba/smb.conf에 GongYoo 라는 공유 디렉토리 생성을 위한 설정
+5) 공유목록 보이게 하고 쓰기모드 가능하도록 설정
+6) 윈도우에서 접속
+7) 작업그룹에서 설정한 디렉토리가 보이는지 검사
+8) 확인이 끝나면 삼바 서버로 접속할 수 있는 사용자 user22를 더 추가하여
+   user11 사용자만 쓰기권한이 가능하도록 smb.conf를 다시 수정.
+9) 다시 윈도우로 접속하여 파일 생성등 검사.
+
+<실습풀이>
+1)
+# useradd user11; smbpasswd -a user11
+2,3)
+# mkdir /new_server ; chmod 777 /new_server
+4,5)
+# vi /etc/samba/smb.conf
+security = user
+passwd backend = tdbsam
+
+[GongYoo]
+path = /new_server
+public = yes
+writable = yes
+browseable = yes
+~
+~
+:wq
+
+# service smb restart
+
+6,7)
+Win+R -> \\192.168.0.10
+
+8)
+# useradd user22; smbpasswd -a user22
+# vi /etc/samba/smb.conf
+[GongYoo]
+path = /new_server
+public = yes
+write list = user11
+browseable = yes
+~
+~
+:wq
+# service smb restart
+
+
+
+
+
+! Samba Linux Client
+
+-> Windows 에서 공유할 디렉토리(win_disk) 생성후 공유폴더로 설정.
+-> 리눅스 클라이언트에서 smbclient 명령어를 이용하여 접속.
+-> 마치 ftp 와 같은 서비스 제공하여 파일을 up/down 할 수 있음.
+
+# smbclient //192.168.0.100/win_disk -> 윈도우 클라이언트 ip주소로 접속
+smb:\> help -> 명령어리스트 출력
+smb:\> get  -> 파일 다운로드
+smb:\> put  -> 파일 업로드
+
+
+
+
+! PDC(Primary Domain Controller)
+
+-> PDC는 로컬 도메인의 보안을 관리하는 윈도우서버의 서비스임.
+-> 모든 도메인은 사용자 이름과 패스워드, 그리고 접근 권한등의
+   데이터베이스를 포함하는 하나의 PDC를 갖게 됨.
+-> 로그인할때 사용자 id와 password를 인증하게 됨.
+-> 하나의 도메인에 반드시 하나만 존재하게 되며 두대 이상의 윈도우
+   서버가 설치된다면 나중에 설치되는 서버는 BDC(Backup Domain
+   Controller)가 됨.
+
+<구성절차>
+1) /etc/samba/smb.conf에서 PDC에 대한 환경설정
+2) 시스템 계정과 삼바계정 동기화
+3) /etc/samba/smb.conf에서 공유 디렉토리 정의 설정
+4) Windows client machine name 추가
+5) 윈도우 클라이언트에서 도메인 가입
+6) 검사
+
+
+1) /etc/samba/smb.conf에서 PDC에 대한 환경설정
+
+[global]
+# ----------------------- Network Related Options ------------------
+        workgroup = SAMBA
+        server string = linux.edu.kr
+
+        netbios name = SAMBASERVER
+
+        hosts allow = 127. 192.168.12. 192.168.13.
+-> 접근허가할 클라이언트 네트워크 대역 지정
+
+        log file = /var/log/samba/%m.log
+        max log size = 50        -> KB 단위의 로그파일 사이즈 설정
+
+;       security = user          -> 주석 처리
+;       passdb backend = tdbsam  -> 주석 처리
+
+# ----------------------- Domain Controller Options ------------------
+        security = user            -> 사용자 인증 설정
+        passdb backend = smbpasswd -> smbpasswd 방식 설정
+        smb passwd file = /var/lib/samba/private/smbpasswd
+-> smbpasswd 방식 사용시 삼바계정과 패스워드 저장될 파일 위치 지정.
+
+        domain master = yes
+        domain logons = yes
+
+# ----------------------- Browser Control Options ------------------
+
+       local master = no       -> 도메인 기능 설정
+       os level = 33
+       preferred master = yes  -> 여러 도메인서버 존재시 우선순위부여
+
+
+2) 시스템 계정과 삼바계정 동기화
+
+# cd /etc/samba
+# cat /etc/passwd | mksmbpasswd.sh > /var/lib/samba/private/smbpasswd
+
+# smbpasswd user1               -> user1 삼바계정 패스워드 부여vi /etc
+New SMB password:
+Retype new SMB password:
+
+# smbpasswd root                -> root 삼바계정 패스워드 부여
+New SMB password:
+Retype new SMB password:
+
+# tail -5 /var/lib/samba/private/smbpasswd  -> 삼바 계정 설정값 확인
+
+
+3) /etc/samba/smb.conf에서 공유 디렉토리 정의 설정
+
+[home]  -> 개별 사용자 홈디렉토리 설정(자동네트워크 드라이브 연결)
+	comment = Home Directories
+	browseable = no
+	writable = yes
+	valid users = %S    -> 현재 공유된 이름으로 생성
+
+[public] -> 모든 사용자가 공유할 디렉토리 설정.
+         -> 이때 공유할 /samba는 sticky bit 설정으로 생성 필요.
+	comment = samba public dir
+	path = /samba
+	browseable = yes
+	guest ok = yes
+	public = yes
+	writable = yes
+
+[netlogon] -> network login 기능 사용시 로그인 가능한 디렉토리 설정   패스
+	comment = Network Logon Service
+	path = /usr
+	guest ok = yes
+	writable = no
+	share modes = no
+
+[Profiles] -> 로그인시 사용자 개인설정 정보 저장될 프로파일 저장위치.  패스
+	path = %H   -> 사용자의 홈디렉토리 지정
+	browseable = no
+	guest ok = yes
+	readonly = no
+
+# service smb restart -> 설정값 적용
+# service nmb restart
+
+4) Windows client machine name 추가
+
+-> 뒤에 $가 붙은 samba-client 가 도메인에 가입할 클라이언트
+   컴퓨터 machine 계정을 추가하지 않으면 도메인에 가입할
+   사용자를 찾을 수 없음.
+
+# useradd samba-client$
+# smbpasswd -m -a samba-client$
+Add user samba-client$.
+
+
+5) 윈도우 클라이언트에서 도메인 가입
+
+-> 윈도우 -> 내컴퓨터 속성정보 -> 컴퓨터이름변경 -> 소속그룹을
+   작업그룹대신 도메인 체크 후 해당 도메인 이름을 입력하여 가입.
+-> 'samba 도메인 시작' -> [확인] 체크 -> 변경된 내용을 적용하려면
+   이 컴퓨터를 다시 시작해야 합니다.
+
+6) 검사
+
+-> 도메인 인증 후 도메인에 로그인
+-> smb.conf에서 설정해준 디렉토리 확인
+-> 사용자 홈디렉토리에서 저장된 profile 확인
+
+[Trouble shooting]
+1)
+windows xp 클라이언트에서 접속했을때 다음의 메시지 발생.
+도메인 "samba"에 가입하는 동안 다음 오류가 발생했습니다.
+네트워크에 중복된 이름이 있기 때문에 연결되지 않았습니다.
+[제어판]의 [시스템]에서 컴퓨터이름을 바꾸고 다시시도하십시오.
+
+-> 
+linux 서버와 Windows XP 모두 snapshot 으로 초기모드로 전환후
+정상접속 가능했음.
+
+2)
+windows7 클라이언트에서 접속했을때 다음메시지 발생.
+도메인 "samba"에 가입하는 동안 다음 오류가 발생했습니다
+지정한 도메인이 없거나 연결할 수 없습니다.
+
+->
+윈도우 클라이언트에서
+제어판 -> 관리도구 -> 서비스 -> netlogon 시작으로 설정
+
+3)
+windows xp 클라이언트에서 접속했을때 다음의 메시지 발생.
+"액세스가 거부되었습니다."
+
+-> root로 인증 받으면 됨.
+

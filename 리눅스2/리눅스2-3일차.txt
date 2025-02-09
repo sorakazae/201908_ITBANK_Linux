@@ -1,0 +1,632 @@
+
+[ITBANK Andylec  주말 리눅스 2 과정]
+
+▣오늘의 수업내용(3일차)
+VNC
+DHCP
+
+
+▣실습준비
+수업용 FTP 서버 900.가상머신 폴더에서 Win2008.alz 를 
+D:\2_주말반\공용 폴더에 다운받고 자신의 폴더에 압축풀기
+(윈도우 탐색기 실행후 자신의 컴퓨터에 파일이 있으면 다운 생략)
+
+▣VNC 서비스
+VNC
+-Virtual Network Computing
+-그래픽(GUI) 리모트 로그인(Remote) 환경을 제공하는 서비스이다.
+-일반 계정은 하나의 연결만 가능
+
+
+☞필요한 패키지
+vnc-server : 서버 프로그램
+vnc          : 클라이언트 프로그램(vnc 서버를 이용하는 프로그램, 리눅스용)
+
+
+☞서비스 관리
+/etc/init.d/vncserver   start|stop|restart
+service  vncserver  start|stop|restart
+
+
+☞서버 설정
+[first]
+#rpm  -qa  |  grep  vnc
+vnc-server 설치되어 있는지 확인
+
+패키지 없으면 yum 으로 설치
+#yum  -y  install  tigervnc-server
+
+
+[first]
+#cd  /etc/sysconfig
+#ls
+#vi  vncservers
+마지막에 추가
+VNCSERVERS="1:root"
+---> VNCSERVERS 는 대문자로 설정
+---> 라인이 # 으로 시작하면 안 됨
+
+////////////////////////////////////////////////////////////////
+"1:root" 에서 1은 디스플레이 번호이고 일반적으로 1 을
+사용한다.
+root 는 로그인 할 때 사용할 계정을 의미한다.
+
+"2:root" 로 설정하면 클라이언트에서 접속할 때 번호를 2로
+지정해야 한다.
+
+여러 계정을 사용하려면
+VNCSERVERS="1:apple  2:orange  3:mango"
+위와 같이 등록하면 된다.
+
+/etc/sysconfig/vncservers 파일에 등록하는 계정은
+adduser 또는 useradd 로 미리 계정을 추가해 주어야 한다.
+
+////////////////////////////////////////////////////////////////
+
+
+
+/////////////////////////////////////////////////////////////////////
+/etc/sysconfig/vncservers 를 수정한 후에는
+#su  -  계정명
+형식으로 vncservers 파일에 등록한 계정으로 전환후
+vncpasswd 명령어를 이용하여 암호 설정을 해 주어야 한다.
+그러면 계정 홈디렉토리 안에 .vnc 디렉토리가 생기고
+암호 파일이 생성된다.
+/////////////////////////////////////////////////////////////////////
+
+#vncpasswd 
+---> 루트 계정이므로  su  - 를 할 필요가 없음
+---> vnc 서비스로 로그인 할 때 사용할 암호 지정(6자 이상 입력)
+#cd  /root/.vnc
+passwd (암호가 저장된 파일이 생성된다.)
+#ls
+#cat  passwd
+인코딩(암호화)되서 실제 패스워드는 알 수 없다.
+
+
+#service  vncserver  start
+서비스가 시작되면서 /root/.vnc 안에 로그파일과 xstartup 파일 등 이 생성된다.
+
+
+
+(vnc 포트 확인)
+#netstat -ntlp  |  grep  vnc
+
+
+☞클라이언트 설정
+[win2003]
+administrator 암호는 andy
+
+2003 에서 웹브라우저 실행하고 아래 사이트 접속
+http://www.tightvnc.com
+
+TightVNC is a free remote control software package. With TightVNC, you can see the
+desktop of a remote machine and control it with your local mouse and keyboard, just like
+you would do it sitting in the front of that computer.
+
+왼쪽 메뉴에서 Download Now 클릭
+TightVNC:
+ Home
+ Download (v1.3) ---> 클릭
+
+Self-installing package for Windows
+---> 클릭해서 다운받기
+
+
+<tightvnc 설치>
+1. tightvnc-x.x.x-setup.exe 실행
+2. welcome 화면-next 클릭
+3. Information-next 클릭
+4. 설치경로-next 클릭(디폴트값 사용)
+5. 구성요소(Select Components)
+    [  ]TightVNC Server 체크 해제
+    [v]TightVNC Viewer 체크
+    [v]Web pages and documentation
+6. 메뉴폴더-next 클릭(디폴트값 사용)
+7. Select Additional Tasks
+    디폴트값 그대로 사용-Next 클릭
+8. Next 클릭
+9. Install 클릭
+10. Finish 클릭
+
+
+
+시작메뉴에서 "프로그램-TightVNC" 를 찾아간 후
+TightVNC Viewer 를 실행시킨다.
+
+VNC sever : [첫번째리눅스아이피:1]
+
+리눅스 머신의 아이피만 적으면 접속이 안 됨
+아이피:1 을 입력하고 Connect 버튼을 누른다.
+암호를 입력하면 로그인 할 수 있다.
+
+[second]
+#rpm  -qa  |  grep  vnc
+#yum  -y  install  tigervnc
+---> vnc 클라이언트 프로그램 설치
+
+리눅스에서 다른 vncserver 로 접속할 때는
+vncviewer 를 입력하면 된다.
+
+#vncviewer  또는  #vncviewer   아이피:디스플레이번호
+
+[첫번째리눅스아이피:디스플레이번호]  입력
+[암호] 입력후 엔터 누르기
+
+
+▣TSClient
+
+[first]
+#yum  -y  install  tsclient
+
+#tsclient
+
+
+▣ftp 명령어
+-FTP(File Transfer Protocol, 파일 전송 서비스) 클라이언트 프로그램
+-디렉토리는 다운 받을 수 없고 
+-동일한 파일을 다시 받으면 덮어쓰기 된다.
+-한글지원 안 됨
+
+
+[second]
+#yum  -y  install  ftp
+#ftp
+ftp>help
+ftp>help  get
+ftp>help  mget
+ftp>help  put
+ftp>help  mput
+ftp>by
+
+
+
+
+
+/////////////////////////////////////////////////////////////////////
+ftp>help(도움말)
+ftp>get(1개 파일 다운)
+ftp>mget(여러개 파일 다운)
+ftp>put(1개 파일 업로드)
+ftp>mput(여러개 파일 업로드)
+ftp>ls(서버쪽 목록 출력)
+ftp>!ls(자신의 컴퓨터 목록 출력)
+!명령어 : 자신의 컴퓨터에서 명령이 실행됨
+ftp>cd(서버쪽 디렉토리 이동)
+ftp>lcd(자신의 컴퓨터 디렉토리 이동)
+ftp>by(접속 종료) 또는 bye 또는 quit
+/////////////////////////////////////////////////////////////////////
+
+
+
+☞ftp 명령어 테스트
+[second]
+#ftp   FTP서버아이피
+Name : 사용자 아이디 입력
+Password : 암호 입력, 입력시 안 보임
+
+
+/////////////////////////////////////////////////////////////////////
+로그인 실패시에는 아래와 같이 하면 된다.
+
+ftp>by
+#ftp  FTP서버아이피
+
+/////////////////////////////////////////////////////////////////////
+
+
+ftp>pwd
+---> 서버쪽 경로
+ftp>!pwd
+---> 자신의 컴퓨터 경로(로컬 경로)
+
+ftp>ls (서버쪽 목록 출력)
+ftp>!ls (자신의 컴퓨터 목록 출력)
+
+ftp>cd  /100.UPLOAD  (서버쪽 디렉토리 이동)
+ftp>pwd  (서버쪽 경로 확인)
+ftp>lcd  /tmp (자신의 컴퓨터 디렉토리 이동)
+ftp>!pwd (자신의 컴퓨터 경로 확인)
+
+ftp>cd  /120.UPLOAD2
+ftp>ls
+ftp>ls  *.rpm
+ftp>mget    open*   gftp*(서버쪽 파일 다운로드, 질문에 엔터 입력)
+ftp>by
+#ls  /tmp
+
+/////////////////////////////////////////////////////////////////////
+[FTP 서버]                                   [FTP 클라이언트]
+pwd                                            !pwd
+cd                                               lcd (영문 엘)
+ls                                                !ls
+
+다운로드)
+ftp>get   a.txt
+ftp>mget   *.txt
+
+업로드)
+ftp>put   b.txt
+ftp>mput   *.txt
+/////////////////////////////////////////////////////////////////////
+
+
+▣실습
+-second 리눅스에서 VNC 서버 구축
+-계정은 root, apple 지정
+-win2003 에서 apple 계정 이용하여 second 리눅스 vnc 서버에 접속한
+화면을 캡춰한 후 실습게시판에 제출
+
+▣실습
+1. /down 폴더 생성, /upload 폴더 생성 및 이동
+2. 자신의 영문이니셜 또는 닉네임을 이용한 파일을 /upload 폴더에 생성
+(이름이 홍길동이면 hkd.txt 로 만들면 됨)
+3. ftp 명령 이용하여 수업용 FTP 서버에 접속후 /100.UPLOAD 폴더에
+자신의 파일을 업로드
+4. 수업용 FTP 서버 120.UPLOAD2 폴더에서 확장자가 html 인 파일을 
+/down 폴더에 다운받기
+
+[리눅스가상머신]---------------------------------------->[FTP Server]
+/upload
+/down
+
+
+
+▣DHCP(Dynamic Host Configuration Protocol)
+Dynamic Host Configuration Protocol 을 의미하며 같은 네트워크 상의 
+클라이언트 컴퓨터에게 IP 를 자동으로 할당해주는 서비스이다.
+
+클라이언트 컴퓨터는 부팅시에 IP, Subnet Mask, Gateway, DNS 정보를 
+DHCP 서버에 요청하고 DHCP 서버는 이 요청에 응답을 해서 아이피 할당이 처리된다.
+
+DHCP 를 사용하면 사용자는 아이피 충돌로 인하여 관리자에게 아이피를 문의해야 
+하는 일이 없어진다.
+
+네트워크 관리자가 조직내의 IP 주소를 중앙에서 관리하고 할당해 줄 수 있도록 해주는 
+프로토콜이므로 관리자 입장에서는 아이피 주소관리의 부담
+(아이피 충돌 문제, 네트워크 정보 변경 문제)이 줄어든다.
+
+DHCP 를 사용하지 않을 경우에는 각 컴퓨터마다 IP 주소를 수동으로 입력해 주어야 한다.
+
+기본적으로 DHCP 서버는 DHCP 클라이언트와 같은 네트워크에 있어야 한다.
+클라이언트가 아이피가 없기 때문이다.
+
+
+☞BOOTP(Bootstrap Protocol)
+초기에 사용되던 통신 규약
+DHCP 의 기반이 됨
+
+☞DHCP 동작 과정
+
+                                             
+                     --------------------------------->
+[dhcp client]  		   IP 요청                        [dhcp server]
+                     <---------------------------------
+		                   IP 임대
+
+
+
+[dhcp client]     <------------------------------>     [dhcp server]
+                               DHCPDISCOVER                                      
+                               DHCPOFFER
+			       DHCPREQUEST
+                               DHCPACK
+
+
+1)1 단계 : IP Lease Request
+
+메시지 - DHCPDISCOVER 
+
+클라이언트는 DHCP 서버를 모르기 때문에
+출발지 주소는 0.0.0.0 , 목적지 주소는 255.255.255.255(브로드캐스트) 형태로 보내고
+여기에는 클라이언트의 
+MAC Address(하드웨어 주소)도 포함되어 있다.
+
+
+2)2 단계 : IP Lease Offer
+
+메시지 - DHCPOFFER
+
+DHCP 서버는 클라이언트에게 사용가능한 아이피 정보등을 브로드 캐스트로 보내 
+사용 제안을 한다.
+
+DHCPOFFER 메시지 내용 :
+  클라이언트의 MAC 주소
+  제안하는 IP
+  임대기간
+  서버아이피
+
+3)3 단계 : IP Lease 선택
+
+메시지 - DHCPREQUEST
+
+클라이언트는 DHCP 로 부터 제안받은 아이피 주소를 선택하고
+임대 요청을 브로드캐스트로 보낸다.
+
+4)4 단계 : IP Lease 응답
+
+메시지 - DHCPACK
+
+DHCP 서버는 클라이언트 메시지에 긍정 응답을 하고 
+클라이언트에게 아이피를 할당한다.
+
+
+
+
+
+<참고>
+tcpdump 명령어를 이용한 패킷 캡춰 결과)
+
+reading from file /work/dhcp.txt, link-type EN10MB (Ethernet)
+07:50:11.753934 IP 0.0.0.0.bootpc > 255.255.255.255.bootps: BOOTP/DHCP, Request from 00:0c:29:bc:c0:f9, 
+
+length: 300
+---> 컴퓨터가 DHCP 서버를 찾는 패킷
+
+07:50:12.002536 IP 192.168.x.25.bootps > 192.168.x.233.bootpc: BOOTP/DHCP, Reply, length: 300
+---> 서버가 아이피를 제안하는 패킷
+
+07:50:12.010524 IP 0.0.0.0.bootpc > 255.255.255.255.bootps: BOOTP/DHCP, Request from 00:0c:29:bc:c0:f9, 
+
+length: 300
+---> 컴퓨터가 아이피 사용 요청하는 패킷
+
+07:50:12.024001 IP 192.168.x.25.bootps > 192.168.x.233.bootpc: BOOTP/DHCP, Reply, length: 300
+---> 서버가 아이피가 사용허락을 응답하는 패킷
+
+
+☞관련 파일
+[DHCP Server]                                                       [DHCP Client]
+포트 : 67(서버)                                                       포트 : 68(클라이언트)
+
+프로토콜 : UDP
+
+데몬 : /usr/sbin/dhcpd
+데몬 스크립트 : /etc/init.d/dhcpd
+
+설정파일 : 
+/etc/dhcp/dhcpd.conf(서버 설정 파일)
+클라이언트는 네트워크 설정에서 프로토콜을 dhcp 로 해 주면 된다.
+
+IP임대로그파일 : /var/lib/dhcpd/dhcpd.leases
+
+※시간 동기화
+[first]
+#rdate  -s  time.bora.net
+#date
+
+[second]
+#rdate  -s  time.bora.net
+#date
+
+
+<DHCP 서버 설정>
+[first]
+아래와 같이 나오면 yum 이용하여 DHCP 서버 프로그램을 설치한다.
+
+#rpm -qa | grep dhcp
+dhcp-common
+
+#yum  -y   install   dhcp*
+
+#rpm -qa | grep dhcp
+dhcp-common
+dhcp-devel
+dhcp (서버 프로그램)
+
+
+DHCP 포트 확인
+#grep  bootp  /etc/services
+
+
+#cat  /etc/dhcp/dhcpd.conf
+---> 서버 설정에 기본적으로 내용이 없다.
+
+/////////////////////////////////////////////////////////////////////
+DHCP 서비스 설정 파일 
+
+CentOS 5 버전 : /etc/dhcpd.conf
+CentOS 6 버전 : /etc/dhcp/dhcpd.conf
+
+/////////////////////////////////////////////////////////////////////
+
+샘플 파일 :
+/usr/share/doc/dhcp-버전/dhcpd.conf.sample  
+---> 샘플 파일을 복사해서 사용할 수도 있다.
+
+#cat  /usr/share/doc/dhcp*/dhcpd.conf.sample
+
+
+☞DHCP 서버 설정 파일 형식
+
+subnet  네트워크주소  netmask  서브넷마스크 {
+     option routers  게이트웨이 ;
+     option subnet-mask 서브넷마스크 ;
+     option domain-name 도메인이름 ;
+     option domain-name-servers DNS서버주소 ;
+     range dynamic-bootp 시작아이피 마지막아이피 ;
+     default-lease-time 임대시간(단위는 초) ;
+     max-lease-time 최대임대시간(단위는 초) ;
+}
+
+host ns { ---> 클라이언트에게 특정 아이피를 지정할 때 사용하는 항목
+                hardware Ethernet 맥주소 ;
+                fixed-address 특정아이피 ;
+}
+
+
+
+
+
+default-lease-time time;
+Time should be the length in seconds that will be assigned to a lease if the
+client requesting the lease does not ask for a specific expiration time.
+
+
+max-lease-time time;
+Time should be the maximum length in seconds that will be assigned to a
+lease. The only exception to this is that Dynamic BOOTP lease lengths,
+which are not specified by the client, are not limited by this maximum.
+
+
+참조)
+http://www.fis.unipr.it/pub/linux/redhat/9/en/doc/RH-DOCS/rhl-cg-ko-9/s1-dhcp-configuring-server.html
+
+
+
+
+
+
+#cd  /etc/dhcp
+--->아래는 first 리눅스 아이피가 192.168.1.10 인 경우이므로
+      아이피가 틀린 경우에는 자신의 아이피를 적고 테스트하면 된다.
+
+#vi  dhcpd.conf
+subnet   192.168.1.0   netmask   255.255.255.0  {
+        option  routers  192.168.1.2; (게이트웨이)
+        option  subnet-mask  255.255.255.0; (서브넷 마스크)
+        option  domain-name  "andytest.com";
+	option  domain-name-servers   168.126.63.1; (DNS 서버)
+	range   192.168.1.71   192.168.1.80; (아이피범위)
+        default-lease-time 7200; (임대기간, 단위는 초)
+        max-lease-time 86400;
+}
+
+//////////////////////////////////////////////////////////////////////////
+위에서 괄호(  ) 안의 내용은 설명이므로 적는 것이 아님
+
+임대시간 예)
+30분 : 30분 x 60초 = 1800
+1시간 : 60분 x 60초 = 3600
+2시간 : 120분 x 60초 = 7200
+//////////////////////////////////////////////////////////////////////////
+
+인터넷을 하기 위한 정보 일부(DNS, 게이트웨이)가 생략되어도 
+서비스는 시작되지만
+디폴트값으로 설정되지는 않는다.
+
+
+
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////////
+설정 예)
+
+
+subnet 192.168.10.0 netmask 255.255.255.0 {
+# --- default gateway
+option routers 192.168.10.2;
+option subnet-mask 255.255.255.0;
+
+# option nis-domain "domain.org";
+option domain-name "example.com";
+option domain-name-servers 192.168.x.x;
+
+# option ntp-servers 192.168.1.1;
+# option netbios-name-servers 192.168.1.1;
+# --- Selects point-to-point node (default is hybrid). Don't change this unless
+# -- you understand Netbios very well
+# option netbios-node-type 2;
+
+range dynamic-bootp 192.168.10.100 192.168.10.199;
+default-lease-time 21600;
+max-lease-time 43200;
+
+# # we want the nameserver to appear at a fixed address
+# host ns {
+# next-server marvin.redhat.com;
+# hardware ethernet 12:34:56:78:AB:CD;
+# fixed-address 207.175.42.254;
+# }
+}
+
+
+
+host  fedora  {
+option host-name "fedora.example.com";
+hardware ethernet 00:A0:78:8E:9E:AA;
+fixed-address 192.168.1.4;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+
+
+☞서비스 관리
+/etc/init.d/dhcpd  stop|start|restart
+service  dhcpd  stop
+service  dhcpd  start
+service  dhcpd  restart
+
+
+#service  dhcpd  start
+#netstat -nulp | grep dhcp
+udp        0      0 0.0.0.0:67                  0.0.0.0:*                               16770/dhcpd
+#
+
+
+/////////////////////////////////////////////////////////////////////
+포트가 열리지 않았으면 -d 옵션 이용하여 오류를 찾은 후
+오류를 해결하고 service 시작 시키기
+#dhcpd  -d
+/////////////////////////////////////////////////////////////////////
+
+
+<DHCP 클라이언트 설정>
+[second]
+#dmesg  |  grep  eth
+인터페이스 장치명 확인(eth0)
+
+
+#system-config-network
+장치설정  선택
+위의 dmesg  |  grep  eth  명령어에서 출력된 장치명 선택(eth0)
+DHCP 사용  [*]
+
+스페이스 바를 눌러서 * 체크를 한 후 저장후 종료
+
+#service  network  restart
+--->리부팅을 해서 확인 할 수도 있다.
+
+
+
+아이피 확인)
+#ifconfig
+
+DNS 확인)
+#cat  /etc/resolv.conf
+
+게이트웨이 확인)
+#route 
+#route  -n
+
+
+#cd  /var/lib/dhclient/
+#ls
+dhclient~.leases
+---> DHCP 클라이언트 정보 파일
+
+
+[first]
+#cd  /var/lib/dhcpd/
+#ls
+dhcpd.leases
+---> DHCP 서버 임대 기록 파일
+
+
+
+※first 와 second 고정아이피 방식으로 다시 설정
+
+[first]                                     [second]
+192.168.x.10                           192.168.x.20
+
+
+
+
+
+
+
+

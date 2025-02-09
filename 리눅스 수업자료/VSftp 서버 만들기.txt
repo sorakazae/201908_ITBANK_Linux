@@ -1,0 +1,142 @@
+vsFTPD 설치 및 운영
+1. rpm -qa vsftpd
+2. yum -y install vsftpd
+3.홈디렉토리 cd /var/ftp
+4. #service vsftpd start -> 시작
+5. system-config-services -> vsftpd -> 저장 -> 재시작
+6. 알 FTP이용해서 접속이 가능...
+7. gedit /etc/vsftpd/vsftpd.conf
+anonymous_enable : 익명 사용자의 접속 허가 설정
+local_enable :  로컬 사용자의 접속 허가 설정
+write_enable :  로컬 사용자의 저장, 삭제, 디렉토리 생성 같은 멍령 수행 허가 설정(익명 사용자는 해당 없음)
+anon_mkdir_write_enable=yes 익명사용자에게 폴더 생성 권한
+anon_upload_enable=YES 익명사용자에게 업로드 권한 부여
+dirlist_enable : 접속한 디렉토리의 파일 리스트를 보여줄건지 설정
+listen_port : FTP 서버스의 포트 번호 설정(기본:21번)
+deny_file :  업로드 금지할 파일을 지정(예 :  deny_file=(*.mpg,*.mpeg,*avi))
+hide_file : 보여주지 않을 파일을 지정 (예 : hide_file=(*.gif, *.jpg, *.png))
+max_clients : FTP  서버의 최대 동시 접속자 수 지정
+max_per_ip :  한 PC가 동시에 접속할 수 있는 접속자 수 지정
+ftpd_banner=Welcome to cnetos FTP	
+저장 service vsftpd restart
+8. 사용자 계정 생성 후 홈디렉리에 업로드
+adduser ftpuser ->FTP 홈디렉토리 /home/ftpuser 폴더
+passwd  ftpuser 
+암호설정 
+chmod 777 /var/ftp/pub/ -> 
+
+
+---------------------------------------------
+FTP 접속 방법
+cmd 모드
+ftp 192.168.0.100
+아이디 : 
+암호 :
+? -> 사용할 수 있는 명령어 집합
+ftp>quit
+익명 사용자 /var/ftp/pub
+
+vsFTPD 데몬 타입 변경
+1. 기본적으로 standalone 타입의 데몬
+/etc/init.d  있다
+2. yum -y install xinetd 패키지 설치
+3. /etc/vsftpd/vsftpd.conf
+110 라인 listen=NO  YES->NO로변경
+4. /etc/xinetd.d/vsftpd ,파일 생성 
+5. cp /usr/share/doc/vsftpd-2../vsftpd.xinetd /etc/xinetd.d/vsftpd 복사
+6. /etc/xinetd.d/vsftpd
+12행 disable=no -> yes를 no로 변경
+7. service xinetd restart
+8 FTP 접속후 pstree 프로세스 트리구조 확읹
+
+
+
+centos 6.x 대역에서 vsftpd 환경 설정
+사용자들이 자신의 FTP 홈디렉토리에 찾아갈 수 있도록 설정
+
+vi /etc/sysconfig/selinux
+SELINUX=disabled 설정 저장 후 리부팅
+
+# 익명연결을 제한한다.
+anonymous_enable=NO 
+
+# chroot 주석해제
+chroot_local_user=YES
+chroot_list_enable=YES
+chroot_list_file=/etc/vsftpd/chroot_list
+
+
+#/etc/vsftpd/chroot_list 파일 생성
+chroot_list 파일에 FTP 사용할 사용자의 목록이 /home 디렉토리의 다른 사용자 홈디렉토리도 보기가 가능
+choort_list 파일만 생성하면 FTP 서버에 접속해서 자신의 홈디렉토리 이외에는 다른 사용자의 홈디렉토리 확인이 안됨
+
+service vsftpd restart
+/vsftpd/ftpusers 파일에는 ftp서버를 사용못하도록 사용자 등록이 가능
+
+
+/etc/vsftpd
+ftpusers 파일과 user_list 파일에서 root 사용자를 # 주석 처리 후 chroot_list 목록에 추가하면 root 사용자도 ftp서버에 접속이 가능
+
+두번째 방법
+1. vsftpd 설치 : Linux에서 사용하는 FTP 서버 데몬
+#yum install vsftpd
+참고 : https://security.appspot.com/vsftpd.html
+ 
+2. 환경파일 설정
+#vi /etc/vsftpd/vsftpd.conf
+anonymous_enable=NO // 익명 접속 처리 N
+pasv_enable=YES // 액티브모드 사용할 시 NO : 확인 요망
+ 
+#vi /etc/vsftpd/user_list
+접속 거부 사용자 리스트 : FTP에 root를 Open 하지 않도록 구성한다.
+ 
+#vi /etc/vsftpd/ftpusers
+접속 거부 사용자 리스트 : FTP에 root를 Open 하지 않도록 구성한다.
+ 
+3. FTP용 계정 생성
+#user add [계정명]
+#passwd [계정명]
+ 
+4. 방화벽 설정 : iptables에 20 (ftp 데이터 처리 port), 21 port를 등록 한다.
+#vi /etc/sysconfig/iptables
+ 
+위의 파일이 존재하지 않는다.
+ 
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 20 -j ACCEPT
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 21 -j ACCEPT
+ 
+//서비스 재기동
+#service iptables restart
+ 
+5. FTP 서버 기동
+#service vsftpd start[stop, restart]
+ 
+6. Centos6 초기 설치 이후의 FTP의 접근이 안되는 경우
+에러종류 : 500 OOPS: cannot change directory:/home/user
+위의 에러는  FTP 프로그램의 폴더에 접근할 수 있는 권한이 없어서 발생
+ 
+해결책
+#getsebool -a | grep ftp : ftp의 설정 정보를 읽고
+allow_ftpd_anon_write --> off
+allow_ftpd_full_access --> off
+allow_ftpd_use_cifs --> off
+allow_ftpd_use_nfs --> off
+ftp_home_dir --> off : 이 부분을 on으로 해줘야 한다.
+ftpd_connect_db --> off
+httpd_enable_ftp_server --> off
+sftpd_anon_write --> off
+sftpd_enable_homedirs --> off
+sftpd_full_access --> off
+sftpd_write_ssh_home --> off
+tftp_anon_write --> off
+#setsebool -P ftp_home_dir on : on으로 설정하는 명령어..
+ 
+위의 내용으로 접근이 가능하다.
+ 
+
+
+
+
+
+
+

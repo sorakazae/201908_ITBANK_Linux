@@ -1,0 +1,909 @@
+
+[ITBANK Andylec  주말 리눅스 2 과정]
+
+▣오늘의 수업내용(6일차)
+Apache
+PHP
+MySQL
+
+
+▣실습준비
+1. 수업용 FTP 서버 120.UPLOAD2 폴더에서
+jpg 파일을 first 의 /var/www/html 로 다운받기
+
+[first]
+#yum  -y  install  ftp
+#cd  /var/www/html
+#ftp   서버아아피
+Name : 아이디 입력
+Password : 암호 입력
+ftp>cd  120.UPLOAD2
+ftp>ls
+ftp>mget  *.jpg
+질문나오면 엔터 또는 y 입력(mget 은 여러 개 파일 다운받는 명령)
+ftp>by
+#
+
+
+#ls
+test.jpg
+#file  test.jpg
+
+리눅스 메뉴표시줄-프로그램-그래픽-gThumb 그림보기 
+---> 이미지(그림) viewer 프로그램
+
+#gthumb
+
+
+
+
+2. 윈도우 웹브라우저 설정 아래와 같이 변경
+웹브라우저 메뉴-도구-인터넷 옵션
+검색 기록 : [설정] 버튼 클릭
+임시 인터넷 파일 :
+  저장된 페이지의 새 버전 확인 :
+    (*) 웹페이지를 열 때마다
+확인
+
+---> 웹서버 테스트시 웹브라우저가 자체적으로 캐쉬해 놓은
+이전 홈페이지가 보여지는 경우가 있으므로 위와 같이
+변경하고 테스트를 한다.
+
+
+▣Apache
+☞웹서버(Web Server)
+윈도우 웹브라우저 주소창에서 아이피나 문자주소를 입력했을 때 
+홈페이지가 보이도록 서비스해 주는 프로그램
+리눅스에서는 Apache 를 주로 사용하고 
+윈도우 서버에서는 IIS 를 주로 사용한다.
+Apache 와 IIS 는 서버 프로그램 이름이다.
+
+
+☞HTTP(Hypertext Transfer Protocol)
+HTTP 는 웹 상에서 파일(텍스트, 이미지, 사운드, 비디오, 기타 파일)을
+주고 받는데 필요한 프로토콜로서
+TCP/IP 와 관련된 응용 프로토콜(Application, 응용 프로그램이 사용하는 프로토콜)이다.
+
+
+☞HTTP 특징
+HTTP 는 World Wide Web(WWW) 에서 사용되는 프로토콜이다.
+HTTP 는 비상태기반(Stateless Protocol) 프로토콜이다.
+클라이언트 요청과 서버측 응답으로 구성된다.
+요청과 응답은 3 부분으로 구성된다.
+1)요청코드(Request Method)/응답 코드(Response Code)
+2)헤더(Header)
+3)바디(Body)
+
+
+☞웹서버의 동작방식 :
+ 1)클라이언트는 웹브라우저를 통해 HTTP 요청을 한다.
+ 2)웹서버는 요청에 대한 내용을 분석한다.
+ 3)웹서버는 파일 시스템의 파일정보를 읽어 들인다.
+ 4)웹서버가 클라이언트에게 파일을 보낸다.
+
+
+
+[웹브라우저]                          [웹서버]
+                  ---------------->
+                  HTTP request
+				           parse request
+				           read file from file system
+                 <----------------
+	             send file            
+
+
+
+
+☞패키지 확인
+[first]
+#rpm -qa | grep httpd
+httpd-버전 (웹서버 메인 프로그램)
+
+프로그램이 검색 되지 않으면 yum 으로 설치
+#yum  -y  install  httpd
+
+
+☞웹서버 설정파일 : /etc/httpd/conf/httpd.conf
+
+☞웹서버 데몬 관리 스크립트 : /etc/init.d/httpd
+
+☞서비스 관리 
+/etc/init.d/httpd  start|stop|restart
+service  httpd  start|stop|restart
+
+
+☞Apache 웹서버 주요 항목
+
+#cd  /etc/httpd/conf
+#vi  httpd.conf
+:set nu
+
+44 ServerTokens  OS
+서버 HTTP 응답 헤더를 설정, 오류문 등 서버 메시지에
+출력되는 정보 설정
+
+Full    : 아파치 서버 버전, 운영체제, 모듈 정보 등을 모두 출력
+OS     : 아파치 서버 버전과 운영체제 정보만을 출력
+Prod   : 아파치 서버 정보만을 출력
+
+
+57 ServerRoot "/etc/httpd"
+웹서버 base 디렉토리
+(웹서버와 관련된 파일과 sub 디렉토리가 모여 있는 디렉토리)
+
+65 PidFile  run/httpd.pid
+프로세스 아이디 파일
+아파치 웹서버가 실행 될 때 PID 를 기록하는 파일을 지정
+경로명이 run/httpd.pid 이므로 /etc/httpd/run/httpd.pid 로 생성 됨
+
+
+70 Timeout  60
+클라이언트의 요청을 받고 응답해 주기까지의 시간
+
+
+76 KeepAlive  Off
+한 번 연결된 연결을 유지할 것인가를 결정하는 지시자
+
+
+92 ##Server-Pool Size Regulation (MPM specific)
+서버 프로세스 수
+아파치 2.x 에서는 다중처리모듈(MPM) 이라는 교체할 수 있는 동기화 모듈 지원
+RPM 패키지 사용시 prefork MPM 으로 설정 됨
+
+
+96 #prefork MPM
+#StartServers: number of server processes to start
+아파치 웹서버를 실행 할 때의 프로세스 갯수 지정
+메인 프로세스 한 개와 startservers 에 설정된 프로세스 갯수가 동작
+
+
+#MaxClients: maximum number of server processes allowed to start
+클라이언트들이 동시에 최대로 접속했을 경우 실행 가능한 최대 프로세스 수
+
+
+136 Listen 80
+웹서버가 사용하는 포트
+
+
+242 User apache
+243 Group apache
+웹서버가 사용하는 유저와 그룹(웹서버가 홈페이지를 찾아갈 때 리눅스 운영체제는
+웹서버가 사용하는 apache 계정이 접근하는 것으로 판단한다.)
+메인 프로세스는 root 로 실행, 자식 프로세스는 apache 권한 으로 실행
+
+
+262 ServerAdmin root@localhost
+서버에 문제가 생겼을 경우 시스템 관리자에게 메일을 보낼 수 있도록
+관리자 이메일 지정
+
+
+#ServerName www.example.com:80
+클라이언트에게 다시 돌려 보내줄 호스트 이름 설정
+기본도메인네임(www.kcr2.pe.kr) 지정
+
+
+292 DocumentRoot "/var/www/html"
+가상호스트를 사용 안할 경우 기본도메인 또는 서버 아이피를 입력했을 때
+보여줄 홈페이지가 있는 디렉토리
+
+
+<Directory  />
+  Options  FollowSymLinks
+  AllowOverride  None
+</Directory>
+디렉토리 접근 설정
+아파치 서버가 접근하는 디렉토리에 대해서 어떠한 서비스나
+기능을 사용할 수 있도록 허용, 거부 설정
+
+/////////////////////////////////////////////////////////////////////
+웹문서 디렉토리 설정 옵션(Options)
+
+FollowSymLinks  : 디렉토리의 심볼릭 링크를 따를 것인지 결정
+
+AllowOverride None
+웹문서 디렉토리의 접근제한 설정 파일인 .htaccess 파일이 있을 경우
+어떠한 설정을 재정의 할 수 있는 지를 결정
+
+/////////////////////////////////////////////////////////////////////
+
+
+366 UserDir disable
+373 #UserDir public_html
+일반계정은 웹서버가 클라이언트에게 홈페이지를 보여주려고 할 때
+일반계정 홈디렉토리 안의 public_html 을 찾아가므로 웹문서를 이 디렉토리안에 
+저장시켜야 한다. (변경할 수 도 있다.)
+
+
+402 DirectoryIndex index.html index.html.var
+웹브라우저에서 www.kcr2.pe.kr(또는 192.168.x.10)이라고 입력했을 때
+가장 먼저 보여줄 파일 지정
+
+
+
+484 ErrorLog logs/error_log
+에러가 나면 /etc/httpd/logs/error_log 에 저장
+
+
+CustomLog logs/access_log common
+웹서버에 접근한 로그 기록
+
+
+ServerSignature On
+시스템 메시지 출력
+아파치 서버가 만들어 내는 문서들에 웹서버 버전, 가상 호스트 이름을
+마지막 라인에 추가
+
+
+Alias  /icons/  "/var/www/icons/"
+알리아스 기능
+
+
+743 LanguagePriority en ca cs da de el
+언어의 우선 순위 부여
+
+
+759 AddDefaultCharset  UTF-8
+문자셋 지정(한글은 EUC-KR)
+
+
+
+
+참조)
+http://httpd.apache.org/docs/2.2/
+
+
+
+
+☞웹서버 테스트
+[first]
+#cd  /var/www/html
+
+#vi  index.html
+---> 웹서버가 가장 먼저 찾는 파일이 index.html 이므로 
+      파일명을 index.html 로 저장한다.
+<html>
+<body>
+<br>
+<center>
+<h1>
+자신의 이름 영문 이니셜 <br>
+Linux Web Server <br>
+</h1>
+<hr  color=orange>
+<p>
+<img  src=test.jpg  width=600 height=400><p>
+<img  src=test2.jpg  width=600 height=400><p>
+<img  src=test3.jpg  width=600 height=400><p>
+</center>
+</body>
+</html>
+
+
+
+
+
+/////////////////////////////////////////////////////////////////////
+HTML
+(Hyper Text Markup Language)
+웹문서를 만드는 언어
+
+<html> 로 시작해서 </html>로 끝남
+<body></body>는 웹문서 본문 정의
+<br> 개행 태그
+<h1></h1> 헤드라인 태그
+<hr> 수평선 태그
+<img> 이미지 태그
+<p> 문단 태그
+<center></center> 중앙 정렬 태그
+/////////////////////////////////////////////////////////////////////
+
+
+
+서비스 시작)
+#service  httpd  restart
+#netstat  -ntlp  |  grep  httpd
+80 포트 확인
+
+
+[windows]
+http://리눅스아이피
+
+
+<일반 사용자 홈페이지 사용하기>
+주소형식)
+http://아이피또는문자주소/~계정명
+
+[first]
+#cd  /etc/httpd/conf
+#vi  httpd.conf
+:set  nu
+아래와 같이 설정
+
+366 #UserDir disable
+
+373 UserDir public_html
+
+
+저장후 종료
+
+#service  httpd  restart
+
+#cd  ~apple
+#pwd
+/home/apple
+#mkdir  public_html
+#cd  public_html
+#pwd
+/home/apple/public_html
+#vi  index.html
+<html>
+<body>
+<h1>
+Apple's Homepage
+</h1>
+<h3>
+Linux Web Server
+</h3>
+</body>
+</html>
+
+[windows]
+http://리눅스아이피/~apple
+--->Forbidden ?
+
+
+[first]
+#ps  -ef  |  grep httpd
+#cd  /home
+#ll
+
+웹서버(apache 계정 사용) ---> /home/apple 디렉토리 접근
+
+#ls  -ld  /home/apple
+#chmod  755  /home/apple
+#ls  -ld  /home/apple
+
+
+[windows]
+http://리눅스아이피/~apple
+
+
+▣PHP
+▷Professional HyperText Preprocessor
+▷서버에서 해석되는 HTML 에 내장되어 동작하는 스크립트 언어
+▷C, JAVA, Perl 등에서 문법을 차용해 옴
+▷웹브라우저 등으로 실제 코드를 볼 수 없는 보안상 이점
+▷대부분의 데이타베이스 지원
+
+
+[first]
+▷패키지 확인 및 설치
+#rpm  -qa  |  grep  php
+#yum  -y  install  php  php-mysql
+
+▷설정파일 : /etc/php.ini
+▷서비스 관리 : 웹서비스 이용
+PHP 는 독립적인 서비스가 아니라 웹서버가 실행시 메모리에 부품(모듈)형태로
+적재시킨후 사용을 한다.
+
+--------------
+PHP 모듈
+--------------
+웹서버
+--------------
+[메모리]
+
+#service  httpd  restart
+#netstat  -ntlp  |  grep  httpd
+
+
+▷PHP 문법
+1. PHP 코드는 <?php 로 시작해서 ?> 로 끝남
+2. 변수는 $ 기호로 시작
+3. 변수 선언 없이 사용가능
+4. 한 문장은 ; 로 끝남
+5. echo 는 출력 함수
+6. 변수이름은 대소문자 구분
+7. 함수이름은 대소문자 구분 안 함
+8. // 는 한 줄 주석
+9.  여러 줄 주석은  /*  ~  */
+/*
+여기는 설명 1 입니다.
+여기는 설명 2 입니다.
+*/
+
+
+예제 1)
+
+#cd  /var/www/html
+#vi  info.php
+<?php
+phpinfo();
+//phpinfo() 는 php 정보 출력 함수
+?>
+
+실행방법)
+웹브라우저 실행
+http://아이피/info.php
+
+
+예제 2)
+#pwd
+/var/www/html
+#vi  hello.php
+<html>
+<head>
+<title>PHP TEST</title>
+</head>
+<body>
+<?php
+echo  "<h1>Hello  World</h1>";
+//echo 는 PHP 출력 함수
+$num1 = 100;
+$num2 = 200;
+echo  $num1 + $num2;
+?>
+</body>
+</html>
+
+
+
+☞PHP 처리 과정
+HTML : 웹문서를 만드는 언어(동적인 처리 불가)
+PHP : 웹프로그래밍 언어(동적인 처리 가능)
+
+1. 웹브라우저가 웹서버에게 PHP 파일 요청
+2. 웹서버 프로그램이 PHP 모듈에게 처리 부탁
+3. PHP 모듈이 PHP 처리후 결과를 HTML 형태로 웹서버에게 전달
+4. 웹서버가 웹브라우저에게 결과를 전달
+5. 결과적으로 웹브라우저에서는 PHP 코드는 안 보이고 HTML 형태만 보임
+
+[웹서버]                                        [웹브라우저]                   
+
+Apache + PHP                                http://리눅스아이피/hello.php
+
+-------------------
+PHP 모듈
+-------------------
+웹서버 데몬
+-------------------
+[웹서버 메모리]
+
+
+
+예제 3)
+#pwd
+/var/www/html
+#vi  for.php
+<?php
+for($i=1;$i<=9;$i++) {
+  $result=2 * $i;
+  echo "<font color=green size=5>2 x $i = $result</font><br>";
+}
+?>
+
+////////////////////////////////////////////////////////////////
+for 문은 반복문(조건을 만족 할 때까지 반복)
+for(초기치 ; 조건 ; 증감식) {
+    문장;
+}
+실행순서 : 조건을 만족할 때 까지 반복
+1)초기치
+2)조건
+3)문장
+4)증감식
+5)조건
+6)문장
+....
+////////////////////////////////////////////////////////////////
+
+
+▣실습
+아래와 같은 홈페이지가 출력되도록 두번째리눅스 웹서버 구축
+1. http://두번째리눅스아이피
+2. http://두번째리눅스아이피/~itbank
+3. http://두번째리눅스아이피/gugudan.php
+---> 구구단 9 단 출력
+
+itbank 계정을 추가후 홈페이지를 만들어야 함
+
+
+▣MySQL
+▷데이타베이스 :
+자료를 효율적으로 저장하는 공간
+table 단위
+
+▷DBMS :
+데이타베이스를 관리하는 시스템
+
+
+사용자 <---------> Application <--------> DBMS <--------> 데이타베이스
+
+▷DBMS 종류
+1. MySQL
+공개형 오픈소스 데이타베이스
+중소형급의 강력한 DB 서버
+PHP 및 각종 언어와 연결이 쉽고 간편
+
+2. Oracle, SQL Server
+엔터프라이즈급의 대형 DB 서버
+
+
+
+
+///////////////////////////////////////////////////////////
+Table(테이블) 자료 형태)
+
+---------------------------------------------------------
+번호   이름    이메일             주소      전화번호
+---------------------------------------------------------
+1       aaa     aaa@aa.com    Seoul    11-22-33
+2       bbb    bbb@aa.com    Pusan   11-22-44
+3       ccc     ccc@aa.com     Daegu   11-22-55
+---------------------------------------------------------
+
+레코드 : 한 행(라인, 줄) 을 의미
+컬럼(column) : 열(각 라인의 항목) 을 의미, 필드(field) 라고도 함
+
+///////////////////////////////////////////////////////////
+
+
+
+[first]
+#rpm  -qa  |  grep  mysql-server
+---> 서버 프로그램 확인
+
+프로그램 없으면 yum 으로 설치
+#yum  -y  install  mysql-server
+
+
+▷설정 파일 : /etc/my.cnf
+
+▷서비스 시작
+#service  mysqld  start
+#netstat  -ntlp  |  grep  mysqld
+3306 포트 확인
+
+
+
+▷MySQL 접속
+mysql : mysql 서버에 접속하는 클라이언트 명령어 프로그램
+
+mysql  -u  사용자  -p  또는  mysql   -u사용자  -p암호
+
+[first]
+#mysql  -u root  -p
+암호는 엔터 입력
+--->여기서 root 는 MySQL 관리자 계정을 의미
+--->리눅스 시스템의 관리자 계정 root 가 아님
+
+ctrl + l(엘) ---> 화면 clear
+
+▷MySQL 접속 끊기
+mysql>quit
+
+
+▷버전 및 날짜 확인
+mysql>select  version(), current_date();
+
+▷데이타베이스 목록 보기
+mysql>show  databases;
+
+
+▷데이타베이스 생성
+mysql>create  database  디비이름;
+(이름은 한글 사용 불가)
+mysql>create  database  linux1;
+mysql>create  database  linux2;
+mysql>show  databases;
+
+
+▷데이타베이스 삭제
+mysql>drop  database  디비이름;
+mysql>drop  database  linux1;
+mysql>show  databases;
+
+
+▷데이타베이스 선택
+mysql>use  디비이름;
+mysql>use  linux2;
+mysql>select  database();
+mysql>show  tables;
+
+
+테이블 예)
+
+bbs1 ---> 테이블 이름
+---------------
+번호  이름 ---> 필드 이름(field name) 또는 컬럼 이름(column name)
+---------------
+1     apple
+2     banana
+---------------
+
+bbs2
+--------------------------------------
+번호  이름      이메일      내용
+--------------------------------------
+1  apple    apple@a.com   test
+2  banana banana@b.com  test2  
+--------------------------------------
+
+
+▷테이블 생성
+mysql>create  table  테이블이름(필드이름  자료형, 필드이름2  자료형 ...);
+(테이블 이름 한글사용 불가)
+mysql>create  table  bbs1(num  int, name varchar(20));
+mysql>create  table  bbs2(num  int  not  null  auto_increment  primary key,
+name  varchar(20),
+email  varchar(30),
+content  varchar(50));
+
+mysql>show  tables;
+
+//////////////////////////////////////////////////////////////////////////////////
+MySQL 자료형)
+int : 숫자(정수) 를 의미하는 자료형
+not null : 널값 허용 안함
+auto_increment : 자동 증가 속성
+primary key : 중복방지 속성
+
+num int not null auto_increment primary 는 숫자가 자동으로 증가하는 설정
+
+varchar : 가변길이 문자형, varchar(10) 은 최대 10문자 까지 입력받을 수 있다는 의미
+//////////////////////////////////////////////////////////////////////////////////
+
+
+bbs1
+----------------------
+num     |   name
+----------------------
+1             apple
+2             orange
+----------------------
+
+▷테이블 구조 확인
+mysql>show  tables;
+mysql>desc  bbs1;
+mysql>explain  bbs1;
+
+
+▷레코드(자료) 입력
+mysql>insert  into  테이블이름  values(값1, 값2 ...);
+mysql>insert  into  bbs1  values(1,'apple');
+mysql>insert  into  bbs1  values(2,'banana');
+
+숫자는 그대로 사용하고 문자열은 작은따옴표로 감싸 주어야 한다.
+
+
+▷자료 검색
+mysql>select  *  from  테이블이름;
+mysql>select  *  from  bbs1;
+mysql>select   num  from  bbs1;
+
+
+▷레코드(자료) 수정
+mysql>update  테이블이름  set  필드이름=수정값, 필드이름2=수정값 ...  where 조건;
+
+mysql>update  bbs1  set  name='candy'  where  num=2;
+---> where 절이 없으면 모든 행이 수정 됨
+mysql>select  *  from  bbs1;
+
+▷레코드(자료) 삭제
+mysql>delete  from  테이블이름  where  조건;
+mysql>delete  from  bbs1  where  num=1;
+---> where 절이 없으면 모든 행이 삭제 됨
+mysql>select  *  from  bbs1;
+
+▷테이블 삭제
+mysql>drop  table  테이블이름;
+mysql>drop  table  bbs1;
+mysql>show  tables;
+
+▷MySQL 루트 암호 설정
+mysql>quit
+#mysqladmin  -uroot  password  '1234'
+---> mysql 관리자 계정 root 의 암호를 1234 로 설정
+
+#mysql  -uroot  -p
+암호입력
+
+
+▣실습 준비
+수업용 FTP 서버  120.UPLOAD2 폴더 에서 zb4pl9.zip 파일을 /var/www/html 에 다운받기
+
+
+[first]
+mysql>quit
+#yum  -y  install  ftp
+#cd  /var/www/html
+#ftp  서버아이피
+Name : 아이디
+Password : 암호
+ftp>cd  120.UPLOAD2
+ftp>mget  zb*
+ftp>by
+#
+
+
+
+
+▣Zero Board
+오픈 소스 게시판
+
+1)
+[first]
+#cd  /var/www/html
+#unzip  zb4pl9.zip
+--->압축 해제
+
+
+
+#service  mysqld  restart
+
+////////////////////////////////////////////////////////////////
+MySQL 루트 암호 설정 확인
+#mysqladmin  -uroot  password  '1234'
+---> mysql 접속 계정 root 의 암호를 1234 로 설정
+
+////////////////////////////////////////////////////////////////
+
+
+#mysql  -uroot  -p
+암호입력
+
+mysql>create  database  zero_board;
+mysql>show  databases;
+mysql>quit
+
+
+2)
+[first]
+#service  httpd  restart
+
+[windows]
+웹브라우저 실행
+http://첫번째리눅스아이피/bbs/install.php
+
+위의 화면에서 글자가 깨질 경우 
+아래처럼 웹서버의 언어 설정을 변경하고
+제로보드 설치시 파일이 생성될 수 있도록 디렉토리 쓰기 권한 설정을 해 준다.
+
+[first]
+#vi  /etc/httpd/conf/httpd.conf
+httpd.conf 의 759 라인 UTF-8 을 EUC-KR 로 변경
+
+759  AddDefaultCharset  EUC-KR
+
+#vi  /etc/php.ini
+아래 항목 On 으로 설정
+229  short_open_tag = On
+693  register_globals = On
+703  register_long_arrays = On
+
+#service  httpd  restart
+
+#chmod  707  /var/www/html/bbs
+
+
+3)
+http://첫번째리눅스아이피/bbs/install.php
+[v]라이센스 동의 체크
+{설치 시작} 클릭
+
+MySQL DB 설정)
+Host Name : localhost
+SQL User ID : root
+Password : 1234
+DB Name : zero_board
+
+{설정 완료} 클릭
+
+
+4)
+관리자 정보(제로보드 관리자 설정 정보 입력)
+ID : admin
+Password : 1234
+Confirm password : 1234
+Name : andylec
+
+{정보 입력 완료} 클릭
+
+5)
+관리자 로그인
+http://첫번째리눅스아이피/bbs/admin.php
+
+User ID : admin
+Password : 1234
+
+
+6)
+관리자 화면
+왼쪽의 [새 그룹 추가] 클릭
+그룹 이름 : Test
+ 
+              오른쪽 하단 Confirm  클릭
+
+
+
+왼쪽 메뉴
+[게시판 관리 | 추가]
+--->추가 클릭
+
+게시판 이름 : linux
+
+                오른쪽 하단 Confirm  클릭
+
+
+
+[first]
+#mysql  -uroot  -p
+mysql>use  zero_board;
+mysql>show  tables;
+mysql>select  *  from  zetyx_board_linux;
+mysql> select no,name,subject,ip from zetyx_board_linux;
++----+------+---------+---------------+
+| no | name | subject | ip            |
++----+------+---------+---------------+
+|  1 | andy | test    | 192.168.1.1 |
+|  2 | andy | test    | 192.168.1.1 |
+|  3 | andy | test3   | 192.168.1.1 |
++----+------+---------+---------------+
+3 rows in set (0.00 sec)
+
+mysql> 
+
+
+▣실습
+second 리눅스에 APM 서버 구축 및 제로보드 설치
+
+
+
+/////////////////////////////////////////////////////////////////////
+[second]
+1)프로그램 설치
+#yum  -y  install  php  php-mysql  mysql-server
+
+2)설정 변경
+#vi  /etc/httpd/conf/httpd.conf
+292 DocumentRoot "/var/www/html"
+759 AddDefaultCharset EUC-KR
+
+#vi  /etc/php.ini
+229 번 라인 On 으로 설정
+693, 703 라인 On 설정 확인
+
+229  short_open_tag  =  On
+693  register_globals  =  On
+703  register_long_arrays  =  On
+
+3)서비스 시작
+#service  httpd  restart
+#service  mysqld  restart
+
+4)암호 변경
+#mysqladmin  -uroot  password  '1234'
+---> mysql 접속 계정 root 의 암호를 1234 로 설정
+
+5)제로보드용 데이타베이스 생성
+#mysql  -uroot  -p
+mysql>create  database  zero_board;
+mysql>show  databases;
+mysql>quit
+
+
+6)제로보드 다운
+#cd  /var/www/html
+제로보드 다운
+
+#unzip  zb4pl9.zip
+--->압축 해제
+
+#chmod  707  /var/www/html/bbs
+
+7)제로보드 설치
+http://두번째리눅스아이피/bbs/install.php
+
+/////////////////////////////////////////////////////////////////////
+
+

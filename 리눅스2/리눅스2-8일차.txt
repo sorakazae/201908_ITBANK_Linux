@@ -1,0 +1,823 @@
+
+[ITBANK Andylec 주말 리눅스 2 과정]
+
+▣오늘의 수업내용(8일차)
+로그(Log)
+방화벽(Firewall)
+
+
+▣로그란?
+-시스템에 접속한 사용자들의 행위들을 저장해 놓은 기록
+-시스템에서 발생한 메시지들의 기록
+-문제 발생시 그 해결 방안을 제시해 주는 가장 기본적인 자료
+
+
+▣로그 분석의 필요성
+1. 시스템의 오류나 사용자의 취향 등을 분석할 수 있는 정보제공
+2. 보안 사고 발생시 추적자료
+3. 문제 발생 전 사전 징후 포착
+4. 로그 분석을 위해
+로그 파일의 경로, 
+로그 파일명, 
+로그 파일을 확인하는 명령어 를 알 필요가 있다.
+
+▣리눅스 로그
+
+<rsyslog>
+☞rsyslog
+시스템 로깅을 담당하는 데몬
+
+로깅 데몬      : rsyslogd
+데몬스크립트  : /etc/init.d/rsyslog
+로깅 데몬 설정 파일 : /etc/rsyslog.conf  
+---> 주요 시스템 로그 파일의 위치를 지정
+
+리눅스 시스템 대부분의 로그파일 저장되어 있는 디렉토리 : /var/log
+
+#ls  /var/log
+
+messages           : 시스템 운영에 대한 전반적인 메시지 저장
+secure               : 사용자들의 원격로그인 정보기록
+maillog              : 메일과 관련된 기록
+cron                  : 시스템 정기 작업에 대한 로그
+boot.log             : 부팅 관련 메시지를 기록
+---> 위 파일들은 /etc/rsyslog.conf 에 등록된 로그 파일
+
+
+#cat   /var/log/messages
+#tail   /var/log/messages
+#tail   /var/log/secure
+#tail   /var/log/maillog
+#tail   /var/log/cron
+
+rsyslog 처리 과정)
+1)서비스 ---> 메시지 발생
+2)rsyslogd ---> 설정 파일에 따라 메시지 기록
+
+#ps  -ef  |  grep  syslog
+#ls  /etc/init.d/rsys*
+
+
+#egrep  'log|Level'  --color  /etc/ssh/sshd_config
+SyslogFacility  AUTHPRIV
+#LogLevel  INFO
+
+---> SSH 접속시 로그메시지를 발생시키는 설정
+
+
+#cat   /etc/rsyslog.conf
+
+1) rsyslog.conf  설정형식
+
+Facility.Level        logfile-location
+  (a)     (b)                (c)
+--->a에 대하여 b의 경우에 해당하는 로그 메시지가 발생하였을 때에 
+     c에 그 기록을 저장하라는 의미
+     모든 Facility 와 모든 Level 를 나타낼 때는 * 를 사용하고
+     여러 메시지를 기록할 때는 ; 로 메시지를 구분해 준다.
+  
+
+2) Facility 종류(로그메시지를 발생시키는 개체)
+#man  3  syslog  
+
+auth
+로그인과 같이 사용자 인증에 관한 메시지
+
+authpriv(현재는 auth 대신에 authpriv 를 사용)	
+로그인과 같이 사용자 인증에 관한 메시지
+
+cron	
+cron 데몬, at 데몬에 의해 발생되는 메시지
+
+daemon
+telnet,ftp 데몬에 의한 메시지
+
+kern	
+kernel 에 의한 메시지
+
+lpr	
+프린터 데몬인 lpd 에 의한 메시지
+
+mail
+sendmail 등의 메일에 의한 메시지
+
+news	
+뉴스서비스에 의한 메시지
+
+uucp	
+uucp 에 의한 메시지
+
+local0 ~ local7 
+사용자가 정의해서 이용
+
+
+3) Level 종류(메시지의 중요도)
+#man  syslog
+
+emerg	
+시스템 다운으로 인한 서비스 불가로 가장 높은 level
+자주 발생한다면 시스템 점검이 반드시 필요
+
+alert
+경고 수준의 레벨로 해당 데몬 및 프로그램 종료 후 보안조치 필요
+
+crit
+유틸리티나 서브시스템을 종료해야 하는 수준
+
+err
+error 수준의 레벨로 주기적인 모니터링 필요 
+
+warn	
+단순 경고 메시지로 주의요망
+
+notice
+시스템에서 발생하는 주의 정도의 로그
+
+info
+정보를 제공하는 메시지
+
+debug
+세부적인 정보 출력으로 문제 해결에 도움을 주는 레벨
+
+none	
+로그하지 않음
+
+
+SSH 서비스 로그 처리 과정)
+
+/etc/rsyslog.conf 설정 내용 :
+
+authpriv.*     /var/log/secure
+
+[리눅스 서버]                          [윈도우]             
+SSH 서비스    <---------------     putty 접속
+
+AUTHPRIV.INFO 메시지 발생
+Syslog 가 설정 파일 참조하여 기록  
+
+
+<로그인 관련 로그>
+☞/var/run/utmp
+시스템에 현재 로그인한 사용자들에 대한 상태를 기록하는 파일
+텍스트 파일이 아닌 바이너리 파일
+vi, cat, tail 명령어로 내용 확인 불가
+who, w, users 명령어를 이용하여 정보 확인
+
+
+#ls  /var/run
+#file  /var/run/utmp
+#cat  /var/run/utmp
+#who
+#w
+#users  --help
+#users
+
+
+☞/var/log/wtmp
+사용자들의 로그인, 로그아웃 정보
+바이너리 형태의 파일
+사용자들의 로그인, 로그아웃 히스토리를 누적 형태로 저장
+시스템의 셧다운, 부팅 히스토리까지 포함
+해킹 피해 시스템 분석시 매우 중요한 로그 기록
+last  명령어로 분석
+
+#ls  /var/log
+#file  /var/log/wtmp
+#cat  /var/log/wtmp
+프롬프트가 깨지면 터미널을 종료후 다시 실행
+#last
+#last  apple
+---> apple 계정 로그인 히스토리 출력
+#last  -5
+---> 출력 라인수 설정
+
+
+☞/var/log/lastlog
+각 사용자가 최근에 로그인한 시간과 접속 장소가 기록되는 파일
+사용자가 시스템에 로그인 할 때마다 갱신 됨
+바이너리 파일
+lastlog 명령어로 분석
+
+#lastlog
+/etc/passwd 파일에 정의되어 있는 모든 계정의 최근 접속 정보를 확인
+#lastlog  -u  계정명
+
+
+<FTP 로그>
+☞/var/log/xferlog
+FTP 파일 전송에 관련된 로그 기록
+
+#cat  /var/log/xferlog
+접근날짜와 시간
+접속한 IP
+전송한 파일 사이즈
+전송한 파일
+파일의 종류
+   b : 바이너리
+   a : ascii 파일
+취해진 해동 분석
+   _ 아무일도 발생하지 않았음
+   C 압축파일
+서버에서 파일 행동 방식
+   i : incoming, 업로드
+   o : outgoing, 다운로드
+   d : delete, 삭제
+사용자 접근 방식
+   r : real, 인증된 사용자
+   a : anonymous, 익명 사용자
+로그인한 ID
+서비스 방법(ftp)
+인증에 사용된 방법(0)
+인증에 사용된 ID(*)
+전송상태
+   c : complete, 전송 성공
+   i : incomplete, 전송 실패
+
+
+
+
+<프로세스 관련 로그>
+☞pacct(process account)
+-사용자가 로그인 한 후 로그아웃 할 때까지 입력한 command 와 시간, 
+작동된 tty(터미널) 등을 저장
+-바이너리 형태의 파일
+
+[first]
+#rpm  -qa  |  grep  psacct
+패키지가 없으면 yum 으로 설치
+#yum  -y  install  psacct
+#service  psacct  restart
+
+/var/account/pacct 바이너리 파일 생성
+lastcomm 명령어를 통해 정보 출력
+
+
+#lastcomm
+#lastcomm  계정명
+S //Superuser 가 사용한 명령임을 의미
+F //다른 프로세스에 의해 fork 된 후에 사용된 명령
+
+<logwatch>
+로그 파일을 하루 단위로 종합적으로 정리해서 메일로 보내주는 스크립트 프로그램
+
+
+#rpm  -qa  |  grep  logwatch
+#yum  -y  install  logwatch
+
+#ls  /etc/cron.daily/
+0logwatch 파일이 Cron 데몬에 의해서 매일 실행 됨
+
+
+
+logwatch 설정 파일 : 
+/usr/share/logwatch/default.conf/logwatch.conf
+
+#cd  /usr/share/logwatch/default.conf/
+#vi  logwatch.conf
+
+27 로그 디렉토리
+35 메일을 보낼 계정
+44 메일제목
+65 Range(범위)
+72 Detail
+
+
+#/etc/cron.daily/0logwatch
+---> logwatch 수동 실행
+
+mail 명령어를 통해 확인
+
+#mail
+&번호
+---> 특정 번호 메일 확인
+&h 
+---> 메일 목록 출력
+&q
+---> 저장후 종료(x 는 저장하지 않고 종료)
+#
+
+
+메일 삭제 : d
+&d 5
+---> 5번 메일 삭제
+&d 6-10
+---> 6번에서 10번 메일 삭제
+
+(메일 삭제후 x 로 종료하면 저장되지 않으므로
+#mail 을 입력했을 때 다시 나타나고
+q 로 종료하면 삭제가 저장된다.)
+
+
+<리눅스 로그 정리>
+1. rsyslog(시스템 로그)
+/var/log 안의 파일 확인
+
+2. 로그인 관련 로그
+who, last, lastlog 명령어로 확인
+
+3. ftp(파일 전송 관련) 로그
+/var/log/xferlog 파일 확인
+
+4. 프로세스 관련 로그
+lastcomm 명령어로 확인
+
+5. logwatch 이용하여 mail 명령어로 확인
+
+
+▣실습
+1. telnet 접속 로그를  /mylog/telnet.log 에 기록하기
+(/etc/rsyslog.conf 에  authpriv.* 등록)
+2. ftp 로그 파일을 /var/log/vsftpd.log 로 변경
+(/etc/vsftpd/vsftpd.conf 파일
+56  xferlog_std_format=NO 로 변경후
+서비스 재시작하고 테스트)
+
+
+[first]                                 [second]
+Telnet 서버 <----------------  telnet 접속
+
+AUTHPRIV 메시지 발생
+Syslog 가 처리
+
+
+/////////////////////////////////////////////////////////////////////
+[first]
+1)
+#vi  /etc/rsyslog.conf
+마지막 라인에 추가
+authpriv.*                                        /mylog/telnet.log
+#mkdir  /mylog
+#service  rsyslog  restart
+#ls  /mylog
+#service  xinetd  restart
+#netstat -ntlp  |  grep  xinetd
+23 번 텔넷 포트 확인
+
+[second]
+첫번째리눅스로 telnet 접속 테스트
+
+2)
+[first]
+#vi  /etc/vsftpd/vsftpd.conf
+56  xferlog_std_format=NO
+#service  vsftpd  restart
+
+윈도우에서 알FTP 이용하여 first 리눅스로 ftp 접속후 파일 전송
+
+[first]
+#cat  /var/log/vsftpd.log
+
+/////////////////////////////////////////////////////////////////////
+
+
+▣방화벽(firewall)  
+설정된 규칙(rule, 룰)에 따라 패킷(데이타)을 
+차단시키거나 통과시키는 프로그램 또는 장비
+
+netfilter   // iptables 가 방화벽 기능을 구현할 수 있게
+                  프레임워크(framework)를 제공
+iptables   // 방화벽 규칙 설정 및 확인 명령어
+
+
+참조)
+http://navercast.naver.com/contents.nhn?rid=122&contents_id=7838
+
+
+<리눅스 방화벽의 구조>
+3개의 기본 테이블(작업공간)로 구성
+각 table은 chain(패킷의 이동통로)으로 구성
+
+1. filter table   // 접속 허용, 차단 판단
+1)FORWARD   // 방화벽을 통과하는 패킷의 이동통로
+2)INPUT         // 방화벽 자체 서비스로 들어오는 패킷의 이동통로
+3)OUTPUT      // 방화벽 자체에서 외부로 나가는 패킷의 이동통로
+
+
+
+2. nat table  : 주소 변환 설정
+1)OUTPUT
+2)POSTROUTING
+3)PREROUTING
+
+외부 ---------------------- firewall -------------------------- 내부
+       (<---)postrouting                  prerouting(--->)
+
+3. mangle table : 패킷의 속성(ttl,tos 등) 변경
+1)FORWARD
+2)INPUT
+3)OUTPUT
+4)POSTROUTING
+5)PREROUTING
+
+
+☞방화벽 분류
+호스트 기반 방화벽(서버 방화벽)은 FORWARD를 이용하지 않는다.
+(INPUT과 OUTPUT만 이용)
+
+
+(1) 호스트 기반 방화벽(Host Based)
+[client] ------------------ [웹서버 and 방화벽]
+
+
+(2) 네트워크 기반 방화벽
+[client] ------- [only 방화벽] ---------+------ [웹서버]
+                                                    |
+				                    +------ [네임서버]
+				                    |
+			                            +------ [DB서버]
+
+
+▣iptables 형식
+iptables  -t  테이블이름  command  체인이름  파라미터 옵션 ...
+
+테이블이름
+table                         // filter, nat, mangle  
+
+command
+-L                              // 규칙 목록, List
+-A                             // 규칙추가(마지막에 추가), Append
+-F                             // 규칙 모두 삭제, Flush
+-D 체인명 규칙번호      // 특정 번호 규칙 삭제, Delete
+-I                              // 규칙입력(첫번째 규칙으로 추가), Insert
+-I 체인명 2                 // 2번째 규칙으로 입력
+-R 체인명 규칙번호      // 특정 번호 규칙 교체, Replace
+
+체인이름
+chain                        // INPUT, OUTPUT, FORWARD, 사용자 체인
+
+파라미터
+-p  프로토콜              // 규칙에 영향을 받는 프로토콜 지정(icmp, tcp, udp, all)
+
+옵션
+target                       // DROP, REJECT, ACCEPT
+
+
+포트를 여러 개 지정할 경우는 -m multiport 를 사용한 후 --sports, --dports, --ports 다음에 
+포트를 , 로 지정
+예) -m multiport  -p tcp  --dports  10,20,30
+
+포트범위 지정은 : 을 사용
+예) -p  tcp  --dport  10:100
+
+특정 포트와 아이피를 제외할 경우에는 ! 연산자 사용
+예) !  -s 192.168.x.1
+    -p  tcp  !  --dport  23
+
+
+웹서버 동작시키기
+[first]
+#service  httpd  restart
+#netstat -ntlp  |  grep  httpd
+
+[windows]
+웹브라우저 실행
+http://리눅스아이피
+---> O (홈페이지 출력 확인)
+
+
+[first]
+#service   iptables   status
+#service   iptables   start
+#service   iptables   status
+---> ?
+
+☞리눅스 방화벽 동작시키는 방법
+1) lokkit
+2) setup
+3) system-config-firewall
+4) system-config-firewall-tui
+
+
+☞리눅스 방화벽 규칙설정 방법
+1) setup, system-config-firewall, system-config-firewall-tui
+
+2) iptables 를 이용한 설정
+
+
+[first]
+#lokkit  --enabled
+#service  iptables  status
+#lokkit  --disabled
+#service  iptables  status
+
+
+#setup
+방화벽 설정 선택
+
+#system-config-firewall
+---> GUI 환경
+
+#system-config-firewall-tui
+---> TUI 환경
+
+모듈(module) : 메모리에 로딩해서 특정 기능을 사용하는 부품 개념
+lsmod : 모듈 확인
+modinfo : 모듈 정보 확인
+
+#lsmod
+iptable 모듈 확인
+#modinfo  ip_tables
+#modinfo  pcnet32
+--->랜카드 드라이버
+
+
+#iptables  -L
+-L(대문자) 규칙 목록 출력
+
+#service  iptables  status
+
+웹브라우저 설정 확인)
+[windows]
+웹브라우저 실행후 도구-인터넷 옵션 클릭
+일반-검색 기록-설정 클릭
+저장된 페이지의 새버전 확인:
+(*)웹페이지를 열 때마다
+확인 클릭
+
+--->방화벽으로 차단 설정을 해도 웹브라우저 캐쉬가 보여지므로
+위와 같이 설정을 변경함
+
+
+http://리눅스아이피
+---> X (방화벽이 차단해서 홈페이지 출력 안 됨)
+
+[first]
+#iptables  -F
+-F (flush) 규칙 모두 삭제
+
+#iptables  -L
+
+
+[windows]
+http://리눅스아이피
+---> O (방화벽 규칙을 삭제했으므로 홈페이지 출력 됨)
+
+
+[first]
+#service  iptables  restart
+#iptables  -L
+---> 방화벽 규칙 이 다시 나타난다.
+
+
+☞방화벽 설정에서 웹서비스만 allow 설정하기
+[first]
+#setup
+1)방화벽 설정 실행
+2)탭키 또는 화살표키 이용하여 커서를 Customize(사용자 설정) 로 이동시킨 후 
+엔터 입력
+3)스페이스바 이용하여 
+[*]www(HTTP)에 체크하고 빠져 나온다.
+
+#netstat  -ntlp  |  egrep  'httpd|vsftpd'
+21, 80 포트 확인하고 없으면 서비스 시작 시키기
+
+[second]
+http://첫번째리눅스아이피
+---> O
+
+#ftp  첫번째리눅스아이피
+---> X (호스트로 갈 루트가 없음 출력)
+
+
+
+리눅스 방화벽의 각 테이블 확인
+[first]
+#iptables  -L   -t  filter  
+---> iptables  -L 과 같다.
+     디폴트가 filter 테이블이다.
+
+iptables -t filter -L 로 실행해도 된다.
+
+#iptables  -L   -t  nat
+#iptables  -L   -t  mangle
+
+-L 리스트
+-t 테이블 지정
+
+
+#cat   /etc/sysconfig/iptables
+부팅할 때 또는 iptables 서비스가 restart 될 때 이 파일 내용으로 
+방화벽규칙이 초기화 된다.
+
+iptables  -F(방화벽 규칙 삭제) 한 다음
+리부팅하거나 service 를 재시작해도 위의 파일로 초기화 되지 않고
+자신이 설정한 내용이 저장되게 하려면 설정파일을 수정해야 한다.
+
+
+#mkdir  /backup
+#cp   /etc/sysconfig/iptables   /backup
+기존 규칙 백업
+
+
+#iptables  -L
+기본적으로 filter 테이블이 보여진다.
+#iptables  -F
+#iptables  -L
+
+#reboot
+루트 로그인
+
+#iptables  -L
+기본적으로 설정된 규칙이 다시 나타남
+
+
+☞사용자가 설정한 규칙이 저장(Save)되도록 설정 변경하기
+#vi   /etc/sysconfig/iptables-config
+--->iptables 설정파일
+
+19,25 라인 yes 로 변경
+IPTABLES_SAVE_ON_STOP="yes"
+IPTABLES_SAVE_ON_RESTART="yes"
+
+#iptables  -F
+#iptables  -L
+
+#service  iptables  restart
+#iptables  -L
+---> 서비스를 restart 해도 초기화 되지 않는다.
+
+
+☞방화벽 규칙 설정 예
+대소문자 구분함
+
+[first]
+#iptables  -A  INPUT  -t  filter  -s  아이피  -j  DROP
+필터 테이블의 INPUT 체인에 출발지 아이피 패킷은  drop(접속무시)시키라는 rule 
+아이피는 second 리눅스 아이피로 설정
+
+-A         Append, 추가
+INPUT   입력체인
+-t         테이블(테이블을 생략하면 필터 테이블이 적용된다.)
+filter     필터 테이블
+-s         source 출발지 주소
+-d        destination 목적지 주소
+-j         jump target 처리할 작업
+           DROP    패킷 버림
+           REJECT  접속 거부하면서 메시지 리턴
+           ACCEPT  패킷 통과
+
+#iptables  -L
+
+[second]
+#ftp  첫번째리눅스아이피
+---> X
+Ctrl + c 로 중단
+
+#ssh  첫번째리눅스아이피
+---> X
+
+
+특정서비스만  접속  차단
+[first]
+#iptables  -F
+#iptables  -A  INPUT  -s  두번째리눅스아이피  --dport 23  -j  REJECT
+---> 포트 지정시 프로토콜을 생략하면 규칙 추가 안됨
+
+#iptables  -A  INPUT  -s  두번째리눅스아이피  -p  tcp  --dport  23  -j  REJECT
+--->second 에서 first 로 telnet 접속 차단
+
+-s          출발지 아이피 ---> 클라이언트 아이피
+-d         목적지 아이피 ---> 리눅스 서버
+-p         프로토콜 지정(tcp : tcp 프로토콜, udp, icmp)
+--sport   (source port) 출발지 포트 ---> 클라이언트 포트
+--dport   (destination port) 목적지 포트--->리눅스 서버측 포트
+23         telnet 포트
+
+#iptables  -L
+#iptables  -nL
+n : 숫자로 출력
+
+
+
+first 리눅스에서 telnet 서버, ftp 서버 동작 시키기
+#service  xinetd  restart
+#service  vsftpd  restart
+#netstat  -ntlp  |  egrep  'xinetd|vsftpd'
+21 번, 23 번 포트 확인
+
+
+[second]
+#telnet   첫번째리눅스아이피
+---> X
+
+#ftp  첫번째리눅스아이피
+---> O
+
+
+<iptables 옵션 및 관련 명령어 사용하기>
+[first]
+#cd
+#pwd
+/root
+
+#iptables  -nL  --line-number
+라인번호 출력
+
+
+#iptables-save
+#iptables-save  > firewall.rule
+룰을  파일로 저장
+
+#ls
+#cat  firewall.rule
+
+#iptables  -F
+#iptables  -L
+
+#iptables-restore  <  firewall.rule
+파일로 된 룰을  다시  적용하기
+
+#iptables  -L
+
+
+☞특정 룰 삭제
+#iptables  -F 는  모든 체인의 규칙을 삭제하며
+특정 체인의 규칙만 삭제하려면
+#iptables  -F  OUTPUT 과 같이 체인명을 뒤에 지정해 주면 된다.
+
+
+#iptables  -F
+#iptables  -A  INPUT   -s  172.16.1.1  -j  DROP
+#iptables  -A  INPUT   -s  172.16.1.2  -j  DROP
+#iptables  -A  INPUT   -s  172.16.1.3  -j  DROP
+
+--->규칙이 여러 개 있을 때 top-down(위에서 아래로) 방식으로 처리된다.
+
+
+#iptables   -L
+#iptables  -nL  --line-number
+또는 iptables  -nL  --line-numbers
+
+#iptables  -D  INPUT  2 
+---> 두번째 규칙 삭제
+---> -D 옵션  // 규칙 삭제 
+
+#iptables  -nL  --line-number
+
+☞룰 insert 하기
+#iptables  -I  INPUT  -s  172.16.1.30  -j  DROP
+I  //Insert , 첫번째 룰로 입력된다.
+
+#iptables  -nL  --line-number
+
+#iptables  -I  INPUT  2  -s  172.16.1.40  -j  DROP
+두번째 룰로 입력하기
+
+#iptables  -nL  --line-number
+
+
+
+☞룰 replace 하기
+#iptables  -R  INPUT  2  -s  172.16.1.77  -p  udp  --dport  53  -j  DROP
+--->INPUT 체인에서 2번째 규칙을 교체
+
+R  //Replace , 교체
+
+#iptables  -nL  --line-number
+
+
+<IPTABLES 실습>
+second 리눅스에서 방화벽을 동작시키고 규칙 모두 삭제후 테스트하기
+#lokkit  --enabled
+
+21, 22, 23, 80 포트 확인
+포트가 없으면 서비스 시작시키기(프로그램 없으면 yum 으로 설치)
+service  vsftpd  restart, service  xinetd  restart, service  httpd   restart
+#iptables  -F
+
+Q1) 
+iptables 이용하여 first 에서 second 로 ftp 접속 차단
+win2003 은 접속되야 함
+
+Q2)
+현재 룰을 모두 지우고
+win2003 에서  second 로  웹접속, telnet 접속 차단(멀티포트 이용),
+first 에서  second 로  ssh 접속 차단하기
+
+
+
+//////////////////////////////////////////////////////////////////////////
+
+A1)
+#iptables  -A  INPUT  -s  첫번째리눅스아이피  -p  tcp  --dport 21  -j  DROP
+#iptables  -L
+
+A2)
+#iptables  -F
+#iptables  -A  INPUT  -s  윈도우2003아이피  -p tcp --dport 80  -j  DROP
+#iptables  -A  INPUT  -s  윈도우2003아이피  -p tcp --dport 23  -j  DROP
+#iptables  -A  INPUT  -s  첫번째리눅스아이피  -p tcp --dport 22  -j  DROP
+#iptables  -nL
+또는
+#iptables -A INPUT -s 윈도우2003아이피  -m multiport -p tcp --dports 23,80 -j DROP
+#iptables -A INPUT -s 첫번째리눅스아이피 -p tcp --dport 22 -j DROP
+
+//////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+

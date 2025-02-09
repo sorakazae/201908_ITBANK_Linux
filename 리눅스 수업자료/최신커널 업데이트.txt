@@ -1,0 +1,46 @@
+01 .터미널에서 uname -r 명령으로 centos 서버의 커널 버전을 확인하고, finger @ftp.kernel.org 명령으로 현재 안정화된 최신 커널의 버전을 확인해 본다.
+# uname -r
+# finger @ftp.kernel.org
+
+2. 커널 소스를 다운로드 한다.
+2-1 웹브라우저를 실행한 후 http://www.kernel.org에 접속해서 2.6.3x 커널의 전체 소스를 다운로드 한다. 접속 후 안정화된 최신커널 오른쪽 F 글자를 클릭한다. Full Source라는 의미이다.
+2-2 다운로드 받는다.
+3. 다운로드 한 파일을 /usr/src 디렉토리 옮긴 후 압축을 푼다.
+ls /root/다운로드
+mv /root/Desktop/linux2.x.x  /usr/src
+cd /usr/src
+tar xfj linux2.x.x.tar.gz
+cd linux 2.x.x
+pwd
+ls
+4. 컴파일 환경을 설정한다.
+4-0 make xconfig를 명령어로 사용하기 위해서 yum -y install qt-devel 명령어로 과련된 패키지를 설치한다.
+4-1 make mrproper 
+
+4-2 make xconfig 명령으로 커널의 환경을 설정할 수 있다. 이 부분에서 커널에 포함될 부분과 묘듈에 포함될 부분 또는 설치하지 않을 부분을 사용자가 지정하는 것이다. 상당히 복잡하고 방대한 부분이다. 간단히 두 군데 정도만 변경하도록 하겠다.
+4-3 make xconfig 명령으로 입력하면 그래픽 모드의 커널 환경 설정 창이 나온다. 
+텍스트 모드에서 사용하기 위한 같은 명령어로는 make menuconfig 가 있다.
+4-4 
+Processor type and features ->Processor family -> 자신의 cpu 타입을 선택한다(다른 것을 선택해도 별 문제가 되지 않으므로 자신의 CPU와 맞는 값이 없다면 비슷한 다른 것을 선택한다.)
+
+4-5 File systems -> Dos/FAT/NT Filesystems -> NTFS File system support 부분과 그 하위를 모두 체크한다. 이부분은 Windows NTFS 쓰기 기능까지 지원하도록 하는 것이다.
+
+4-6 저장 아이콘을 클릭해서 저장한 후 환경 설정 창을 닫는다.
+
+5. make clean 명령어로 이전의 컴파일 정보를 삭제한 후 make ; make moules_install ; make install 명령을 차례로 수행한다. 이 명령들은 각 각 시간이 오래 걸리므로 세미콜론(;)으로 구분 지어서 세 명령어를 한번에 수행하도록 하자.
+make ; make modules_install ; make install
+make는 커널 컴파일 환경 설정대로 소스를 실제 컴파일하는 과정이며, make modules_install 은 컴파일된 묘듈을 /lib/modules/ 디렉토리에 설치하는 과정이고, make install 실제 컴파일된 커널을 /boot 디렉토리에 설치하는 과정이다.
+
+6. 설치가 완료되었으면 결과를 확인해 보도록 하자. /lib/modules 디렉토리와 /boot 디렉토리를 확인해 보면 새로운 커널 버전인 2.x.x이 설치된 것을 알 수 있다.
+ls -l /lib/modules
+맨 뒤에 2.x.x 버전 확인
+ls -l /boot
+맨 뒤에 2.x.x 버전 확인
+
+7. 부팅할 때 선택해 주는 파일은 /boot/grub/grub.conf 파일이다. 에디터로 열어서 새로 설치한 커널이 잘 등록 되었는지 확인하다.
+title centos 2.x.x 확인
+timeout=10 으로 변경해서 시간을 10초로 해주고 hiddenmenu는 삭제해서 GRUB 화면이 나타나도록 수정한 후에 저장하고 닫는다.
+8. reboot명령으로 재부팅한다. 재부팅 후에 GRUB 화면ㅇ서 새로 설치한 커널 2.x.x을 선택한다.
+8.1 GRUB 화면에서 첫 번째 메뉴인 Centos 2.x.x 선택하고 부팅한다
+8.2 root 접속하고 터미널을 하나 연다.
+8.3 uname -r 명령으로 커널 버전을 확인해 본다. 새로운 커널인 2.x.x이 나올 것이다. 커널 업그레이드가 성공적이다..

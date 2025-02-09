@@ -1,0 +1,467 @@
+[참조] http://webdir.tistory.com/178
+
+@@ Apache 웹서버
+
+-> Apache 웹서버는 공개형 웹서버 프로그램으로서 다양한 플랫폼
+   에서 동작할 수 있도록 설계되어 있음.
+
+-> 웹서버는 사용자가 웹브라우저를 통해 접속했을때 요청한
+   데이터를 클라이언트인 웹브라우저에게 보내는 역할을 함.
+-> 웹브라우저는 사용자가 서버에게 필요한 데이터를 요청하도록
+   해주며 서버가 응답하게 되면 응답받은 데이터를 컴파일을
+   통해 사용자에게 보여주게 됨.
+-> 즉, 웹서버는 클라이언트의 요청을 기다리다가 요청을 받게되면
+   데이터를 보내는 프로그램임.
+
+! 정적인 웹서버
+
+-> 기본적으로 apache 웹서버는 html과 같은 정적인 데이터만 처리하게 됨.
+-> 정적이라고 하는것은 접속 후 데이터요청할때마다 변하지 않은
+   똑같은 데이터만 보낸다는 것임.
+
+! 동적인 웹서버
+
+-> 동적인 데이터를 처리하기 위해 웹 스크립트 언어인 asp, php,
+   python, perl 등의 언어 모듈을 등록해야 함.
+   
+-> 또한 jsp를 처리하기위한 Weblogic, Websphere, jeus, tomcat
+   등과 같은 WAS 서버를 구성하기도 함. 이러한 패키지를 
+   웹컨테이너, 서블릿 컨테이너 등으로 부르기도 함.
+
+
+! 웹서버 구성
+
+-> 정적인 데이터 처리는 apache 웹서버가 동작하게 되며 jsp, php
+   등의 동적 웹언어 처리는 apache가 처리할 수 없게되므로
+   두가지 목적의 프로그램과 관련 DB까지 설치하여 연동해 줘야함.
+
+-> 우리 실습에서는 웹서버로는 apache를 동적웹데이터 처리는
+   php를 그리고 DB연동은 MySQL을 설치 사용하도록 함.
+
+
+! Apache 설치
+
+# rpm -qa | grep httpd          -> 시스템에 질의
+
+# yum -y install httpd*         -> httpd 웹서버 설치
+
+# service httpd {start|stop|restart|status}
+
+# chkconfig httpd on            -> booting시 데몬 활성화
+
+# vi /etc/httpd/conf/httpd.conf -> 환경 설정파일
+
+
+! 웹 동작과정
+
+1) 클라이언트 웹브라우저에서 웹서버의 이름주소로 웹데이터 요청.
+2) 네임서버와의 udp 통신에 의해 이름주소가 ip 주소로 변환.
+3) 확인된 ip 통신으로 서버의 linten 중인 80번 포트를 통하여
+   tcp 3way-hanshaking을 거쳐 세션 연결.
+3) 웹서버의 환경설정값에 의해 DocumentRoot 디렉토리에 있는 
+   초기 페이지를 클라이언트에 전송.
+4) 서버로 부터 전달받은 웹데이터를 클라이언트의 웹브라우저가
+   번역하여 내용 출력.
+5) 사용 종료시 tcp 4way-handshaking에 의해 세션 종료.
+-> 패킷 경로 등은 wireshark 패킷분석 툴을 이용하여 확인.
+
+
+! 설치 후 동작 테스트
+
+-> 환경설정 파일 : /etc/httpd/conf/httpd.conf
+
+-> 클라이언트 웹브라우저를 이용하여 http://server_ip 로 접속 확인.
+
+-> 웹페이지의 DocumentRoot 디렉토리인 /var/www/html 위치에
+   index.html 파일 생성 후 클라이언트에서 열리는지 확인.
+
+-> 
+
+
+
+! 환경설정파일 : /etc/httpd/conf/httpd.conf
+
+### Section 1: Global Environment
+
+ServerTokens OS
+-> 오류 및 서버메시지에 출력되는 서버에 대한 정보 설정
+-> apache 서버 버전과 운영체제 정보 출력
+
+ServerRoot "/etc/httpd"
+-> 웹서버 설정파일, 로그, 바이너리, 모듈이 있는 디렉토리 지정
+-> Source 컴파일 후 설치시 서버루트 위치는 달라질 수 있음.
+
+Timeout 120
+-> 클라이언트의 요청 후 응답대기시간. 시간을 초과하면 접속종료.
+
+KeepAlive Off
+-> 한번 연결된 상태에서 여러번의 요청을 허용할것인지의 여부.
+
+MaxKeepAliveRequests 100
+-> KeepAlive On으로 설정시 허용할 최대 요청횟수 지정.
+
+KeepAliveTimeout 15
+-> 동일한 클라이언트가 접속후 15초 동안 다음요청이 없으면 접속종료.
+
+Server-Pool Size
+-> 서버의 프로세스 수 
+-> worker와 prefork 모듈이 지원되는데 모듈선택은 컴파일할때 지정.
+-> rpm으로 설치되는 경우 prefork MPM으로 설정됨.
+-> 웹서버 실행시 메인프로세서1개와 StartServers에 설정된 갯수의
+   자식 프로세스가 동작하게 됨.
+
+Listen 80
+-> Apache 웹서버의 서비스 포트 설정.
+
+LoadModule
+-> 모듈 추가
+-> apache 웹서버에서 지원하는 모듈: /etc/httpd/modules 참조
+
+User apache
+Group apache
+-> 웹서버 실행시 소유권을 갖게되는 사용자명과 그룹명.
+-> 메인프로세서는 root권한, 자식프로세서는 apache권한으로 실행.
+-> 보안상 nobody로 설정하기도 함.
+
+ ### Section 2: 'Main' server configuration
+
+ServerAdmin root@localhost
+-> 문제 발생시 알릴 수 있는 관리자의 e-mail 주소
+
+ServerName www.naver.com
+-> 클라언트에게 보여줄 호스트이름 지정. www를 사용하지 않는
+   호스트에서 www를 쓰는것처럼 설정할 수 있음.
+
+
+DocumentRoot "/var/www/html"
+-> 웹데이터가 있는 디렉토리위치 지정. 웹 시작문서가 있는 위치.
+
+
+<Directory />
+    Options FollowSymLink
+    AllowOverride None
+</Directory>
+-> 디렉토리 접근 기본 유형. 각 디렉토리 접근시 권한 설정.
+
+UserDir disabled
+-> 루트이외의 다른계정으로 홈페이지 운영하고자할때 사용자의
+   웹문서 디렉토리 지정
+
+#<Directory /home/*/public_html>
+.......
+#</Directory>
+-> 루트이외의 일반사용자들의 기본디렉토리 접근권한 설정.
+-> www.naver.com/~user1으로 접속시 /home/user1/public_html에 접속됨.
+
+DirectoryIndex index.html index.html.var
+-> 클라이언트가 웹서버에 웹데이터 요청시 지정한 순서로 전달하게 됨.
+
+AccessFileName .htaccess
+<Files ~ "^\.ht">
+    Order allow,deny
+    Deny from all
+    Satisfy All
+</Files>
+-> 각 디렉토리에 접근제어 정보 내용을 갖고 있는 파일이름 설정.
+-> 통상적으로 .htaccess라는 이름을 사용함.
+-> 인증에 관한 정보를 가지고 있는 파일.
+
+
+ErrorLog logs/error_log
+-> 로그파일명과 저장 위치지정
+
+LogLevel warn
+-> error_log에 기록되는 에러 메시지의 레벨 지정.
+
+#CustomLog logs/access_log common
+-> 클라이언트가 웹서버에 접근한 로그를 기록한 access_log 위치.
+
+#CustomLog logs/referer_log referer
+-> 클라이언트가 웹서버에 요청한 페이지 출력
+
+#CustomLog logs/agent_log agent
+-> 클라이언트가 사용한 웹브라우저 정보 출력.
+
+ServerSignature On
+-> 시스템메시지 출력
+-> 에러문서, 모듈정보 등 웹서버가 만들어내는 문서의 서버버전과
+   가상호스트의 이름을 마지막 라인에 추가.
+
+Alias /icons/ "/var/www/icons/"
+-> 디렉토리의 실제 위치를 별칭으로 설정.
+
+AddDefaultCharset UTF-8
+-> 기본문자셋 지정. 웹문서의 문자셋따라 설정.
+
+
+### Section 3: Virtual Hosts
+
+#NameVirtualHost *:80
+
+#<VirtualHost *:80>
+#    ServerAdmin webmaster@dummy-host.example.com
+#    DocumentRoot /www/docs/dummy-host.example.com
+#    ServerName dummy-host.example.com
+#    ErrorLog logs/dummy-host.example.com-error_log
+#    CustomLog logs/dummy-host.example.com-access_log common
+#</VirtualHost>
+-> 가상호스트 설정.
+-> 하나의 시스템에서 여러개의 도메인과 호스트 이름을 구분하여
+   웹서비스가 가능하게 됨.
+-> 이름기반의 가상 호스팅: 하나의 ip주소로 여러 웹서비스 가능.
+-> 주소 기반의 가상 호스팅: 하나의 서버에서 서로다른 ip주소를
+   이용하여 호스팅.
+
+
+! 이름기반의 가상호스팅
+
+1) 네임서버에서 가상 도메인에 대해 같은 ip 주소 할당
+
+www	IN A	192.168.0.10
+www1	IN A	192.168.0.10
+www2	IN A	192.168.0.10
+
+
+2) /etc/httpd/conf/httpd.conf 환경파일 설정.
+
+NameVirtualHost *:80
+-> 주석제거 및 ip주소를 사용하게되면 해당 ip 주소에 대한
+   모든 이름 기반의 가상호스트를 포함하게 됨.
+
+<VirtualHost *:80>
+    ServerAdmin root@naver.com
+    DocumentRoot /var/www/html
+    ServerName www.naver.com
+    ErrorLog logs/www-error.log
+    CustomLog logs/www-access_log common
+</VirtualHost>
+<VirtualHost *:80>
+    ServerAdmin root@naver.com
+    DocumentRoot /var/www/html/www1
+    ServerName www1.naver.com
+    ErrorLog logs/www1-error.log
+    CustomLog logs/www1-access_log common
+</VirtualHost>
+<VirtualHost *:80>
+    ServerAdmin root@naver.com
+    DocumentRoot /var/www/html/www2
+    ServerName www2.naver.com
+    ErrorLog logs/www2-error.log
+    CustomLog logs/www2-access_log common
+</VirtualHost>
+
+3) 기능 확인
+-> 각 사이트의 DocumentRoot에 명시한 디렉토리 생성
+-> 각 사이트의 디렉토리에 시작페이지(index.html)생성 및 내용 추가
+-> 클라이언트 웹브라우저를 통해 확인
+
+
+! 주소 기반의 가상 호스팅
+
+1) 네임서버에 서로다른 호스트와 ip 정보 설정.
+
+www	IN A	192.168.0.10
+www1	IN A	192.168.0.11
+www2	IN A	192.168.0.12
+
+2) 네트워크 가상 인터페이스 생성 및 ip 할당.
+
+# cd /etc/sysconfig/network-scripts
+# cp ifcfg-eth0 ifcfg-eth0:0
+# vi ifcfg-eth0:0
+DEVICE=eth0:0
+IPADDR=192.168.0.11
+GATEWAY=192.168.0.1
+DNS1=168.126.63.1
+
+
+3) /etc/httpd/conf/httpd.conf 환경파일 설정.
+
+#NameVirtualHost *:80       -> 주석 처리.
+
+<VirtualHost 192.168.0.10:80>
+    ServerAdmin root@naver.com
+    DocumentRoot /var/www/html
+    ServerName www.naver.com
+    ErrorLog logs/www-error.log
+    CustomLog logs/www-access_log common
+</VirtualHost>+
+<VirtualHost 192.168.0.11:80>
+    ServerAdmin root@naver.com
+    DocumentRoot /var/www/html/www1
+    ServerName www1.naver.com
+    ErrorLog logs/www1-error.log
+    CustomLog logs/www1-access_log common
+</VirtualHost>
+<VirtualHost 192.168.0.12:80>
+    ServerAdmin root@naver.com
+    DocumentRoot /var/www/html/www2
+    ServerName www2.naver.com
+    ErrorLog logs/www2-error.log
+    CustomLog logs/www2-access_log common
+</VirtualHost>
+
+3) 기능 확인
+
+
+
+
+@@ PHP
+
+->
+
+! php 설치
+
+-> MySQL과 Apache와의 연동을 고려하여 설치.
+
+# yum -y install php
+
+
+! apache와의 연동 관련된 파일
+
+1) /etc/httpd/conf/httpd.conf
+Include conf.d/*.conf -> 추가 환경설정파일의 위치가 지정되어 있음.
+
+2) /etc/httpd/conf.d/php.conf
+LoadModule php5_module modules/libphp5.so 
+-> apache가 php공유 오브젝트파일인 libphp5.so을 사용하도록 함.
+
+AddType text/html .php  
+-> .php 확장자 파일을 php엔진이 처리하도록 지정.
+
+3) php 패키지 설치 후 설정이 적용되기위해서 apache 를 재시작.
+# service httpd restart
+
+4) /var/log/httpd/logs/error_log 파일에서 다음의 내용으로 연동됨을 확인.
+[notice] Apache/2.2.15 (Unix) DAV/2 PHP/5.3.3 configured
+
+
+! 설치 검사
+
+1) 테스트 스크립트 사용하여 확인.
+
+# cd /var/www/html
+# vi phpinfo.php
+<? php
+	phpinfo();
+?>
+~
+~
+:wq
+
+2) 클라이언트 웹브라우저에서 확인.
+http://192.168.0.10/phpinfo.php
+-> phpinfo() 함수에 의해 운영체제, php버전, 설정옵션 등
+   php의 자세한 설정정보 출력이 됨.
+
+
+! php 블록
+
+-> php 블록에 의해 php가 실행되도록 php 엔진에게 알려주는 역할.
+
+----------------------------------------------------
+태그 style      시작                      마감
+----------------------------------------------------
+표준 태그       <?php                     ?>
+짧은 태그       <?                        ?>
+스크립트 태그   <script language="php">   </script>
+----------------------------------------------------
+-> 표준태그와 스크립트태그는 php설정과 관계업이 동작되지만
+   짧은태그는 php.ini 설정파일에서 수정해야함.
+-> /etc/php.ini 파일에서 short_open_tab = On 으로 설정해야 함.
+-> ;은 php 문장의 마침.
+
+! 예제
+
+1) php스크립트
+
+# cd /var/www/html/php
+# vi first.php
+<?php
+	echo "Hello php!";
+?>
+
+http://192.168.0.10/php/first.php   -> 클라이언트에서 결과 확인
+
+2) html과 php
+
+-> html 문서내에 php를 블럭단위로 삽입하여 사용.
+
+# vi hello.php
+<html>
+<head>
+<title> HTML & PHP </title>
+</head>
+<body>
+<b>
+<?php
+	echo "Hello world";
+?>
+</b>
+</body>
+</html>
+
+http://192.168.0.10/php/hello.php   -> 클라이언트에서 결과 확인
+
+3) 연산, 변수선언
+
+# vi score.php
+<html>
+<body>
+<?php
+$kor=80;
+$eng=70;
+$math=90;
+
+$sum=$kor+$eng+$math;
+$avg=$sum/3;
+?>
+<table border=1>
+<tr><td>국어:<?php echo $kor; ?></td></tr>
+<tr><td>영어:<?php echo $eng; ?></td></tr>
+<tr><td>수학:<?php echo $math; ?></td></tr>
+<tr><td>합계:<?php echo $sum; ?></td></tr>
+<tr><td>평균:<?php echo $avg; ?></td></tr>
+</table>
+</body>
+</html>
+
+http://192.168.0.10/php/score.php   -> 클라이언트에서 결과 확인
+
+! 주석
+
+-> 단일행 주석처리는 앞에 // 또는 # 로 처리.
+-> 복수행 주석처리는 시작과 끝을  /*   */ 로 처리.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,19 @@
+DDL(Data Definition Language) 은 데이터베이스의 스키마 객체를 생성(CREATE),
+변경(ALTER), 제거(DROP) 하거나 권한의 부여나 박탈(GRANT, REVOKE), 주석(COMMENT),
+자료의 버림(TRUNCATE) 등을 수행하는 문장의 집단을 의미한다.
+각 문장은 CREATE, ALTER, DROP, TRUNCATE, GRANT, REVOKE, COMMENT 등으로 시작한다.
+이 밖에도 많은 종류의 DDL이 존재한다. 그러나 PL/SQL 블록에서는 DDL을 사용할 수 없다.
+
+DML(Data Manipulation Language)은 스키마 객체의 데이터를 입력(INSERT), 수정(UPDATE),
+[Manipulation=교묘한처리,조종]
+조회(SELECT), 삭제(DELETE)하거나 테이블에 잠금을 설정하거나 (LOCK TABLE), SQL문의
+처리의 절차에 대한 정보를 얻거나 (EXPLAIN PLAN), PL/SQL 모듈을 호출하는 작업(CALL)의 집단이다.
+각 문장은 INSERT, UPDATE, DELETE, SELECT, LOCK TABLE, EXPLAIN PLAN, CALL 등으로 시작된다.
+PL/SQL의 모듈에서 사용할 수 없는 DML로서는 EXPLAIN PLAN과 CALL이 있다.
+
+DCL(Data Control Language)은 트랜잭션의 성격을 제어하는 것으로서 SET TRANSACTION,
+COMMIT, ROLLBACK, SAVEPOINT와 같은 종류가 있다.
+PL/SQL 모듈에서는 DCL을 사용할 수 있고 DCL을 이용하여 모듈의 트랜잭션을 제어 할 수 있다.
+
+ 
+

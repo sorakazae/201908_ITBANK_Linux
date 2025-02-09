@@ -1,0 +1,109 @@
+사용자 디렉토리를 이용한 사이트 
+http://192.168.100.150/~test
+httpd.conf -> ctrl + f 찾기 ->userdir
+User "disable" ->#User "disable" -> 주석처리
+#UserDir public_html -> 주석해제
+ 
+사용자 디렉토리 -> 711 public_html ->755 퍼뮤션 설정..
+각 사용자의 홈디렉토리는 /home/사용자계정
+예 : test 사용자 계정 ->chmod 711 test
+cd /home/test
+mkdir public_html 생성 ->chmod 755 public_html
+ls -l
+cd public_html 이동 
+pwd 
+index.html 파일 생성
+cd /home/test=~/test 같은 디렉토리를 의미
+http://192.168.100.150/~test2
+---------------------------------------------------------------
+test2 사용자 계정 만들어서 사이트 구성
+
+--계정 추가시 기본 홈페이지가 생성 되도록 설정하기
+(계정 추가시 /etc/skel 이 복사되는 것을 이용)
+adduser blue
+ls /home/blue
+cd /etc/skel
+pwd
+mkdir public_html
+cd public_html
+/etc/skel/public_html
+cat >index.html
+<html>
+<body>
+Default Page
+</body>
+</html>
+ctrl + d 입력 -> 터미널창 닫기/
+ls
+
+adduser blue2
+ls /home/blue2
+public_html
+ls /home/blue2/public_html
+index.html
+/etc/skel 에 public_html 을 만들어 주었으므로 계정 추가시 홈디렉토리에 자동으로 public_html 이 만들어진다. 
+#ntsysv -> 프로그램 시작시 서비스 프로그램 등록 명령어
+가상호스트를 이용한 웹사이트 구축
+<VirtualHost *>
+ServerSignature email -> 운영자의 이메일
+DirectoryIndex index.php index.html index.htm index.shtml start.html->시작문서 목록
+LogLevel  debug
+HostNameLookups off
+</VirtualHost>
+가상호스트 설정 -> gedit /etc/httpd/conf/httpd.conf
+검색어 : virtualhost 찾기
+<VirtualHost 192.168.100.105>
+DocumentRoot /var/www/html2  -> 홈디렉토리 지정
+ServerName  www2.itstar.vm -> 호스트 네임 지정
+ServerSignature email
+DirectoryIndex index.php index.html index.htm index.shtml
+
+</VirtualHost>
+
+<VirtualHost 192.168.100.105>
+ServerName www.johnbann.com -> DocumentRoot 가 지정 되지 않으면 기본 홈디렉토리로 지정 되었음
+DirectoryIndex index.php index.html index.htm index.shtml
+LogLevel  debug
+HostNameLookups off
+</VirtualHost>
+
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@itstar.vm
+    DocumentRoot /var/www/html2
+    ServerName www2.itstar.vm
+</VirtualHost>
+-----------------------------------------------------------------
+yum -y install system-config-httpd ->그래픽 환경에서 웹 사이트 설정 기능...
+
+실습문제 
+dns 구성 : ibbank.vm
+www.ibbank.vm  -> 주영역 생성 -> 192.168.100.150
+www.ibbank.vm -> ibbank.vm 사이트에 오신걸 환영합니다...
+가상호스트를 이용해서 생성(system-config-httpd)
+ftp.itstar.vm ->/var/www/html3 -> 가상호스트 방식으로 처리
+1.system-config-httpd -> 가상호스트들 탭 ->추가 -> 
+가상 호스트 이름 :FTP Site
+문서루트디렉토리 ->/var/www/html3/
+웹마스터의 이메일 주소 :webmaster@itstar.vm
+Host information ->IP 기반의 가상 호스트
+IP 주소 : 192.168.100.150
+서버호스트 이름 : ftp.itstar.vm
+service httpd restart
+service named restart
+url : ftp.itstar.vm
+
+gedit /etc/httpd/conf/httpd.conf
+# Virtual host FTP SIte
+<VirtualHost 192.168.100.150>
+ 	DocumentRoot /var/www/html3/ 
+ 	
+ 	ServerAdmin webmaster@itstar.vm
+ 	ServerName ftp.itstar.vm
+	ServerSignature email
+ 	DirectoryIndex index.html index.htm index.shtml 
+</VirtualHost>
+
+
+
+

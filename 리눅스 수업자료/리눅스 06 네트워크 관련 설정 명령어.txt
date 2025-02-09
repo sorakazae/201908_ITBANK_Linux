@@ -1,0 +1,82 @@
+네트워크 관련 설정 및 명령어
+#route 라우팅 테이블의 정보 보여줌(게이트웨이 정보 확인)
+-게이트웨이(gateway), 라우터(router)
+명령어 형식
+# route add default gw <게이트웨이 주소> dev <장치이름>
+예 : 게이트웨이가 192.168.100.254로 변경되었을 때는 다음 명령
+route add default gw 192.168.100.254 dev eth0
+service network restart 
+ifconfig eth0
+#DNS 서버
+설정 파일 /etc/resolv.conf 내용 중에 "nammserver <DNS 서버 IP>"로 설정 되어 있다.
+#네트워크 장치 이름
+gedit /etc/resolv.conf
+eth0, eth1
+
+★ 중요한 네트워크 관련 명령어
+
+system-config-network
+system-config-network-tui->텍스트 기반에서 작동
+service network restart 
+네트워크 설정 변경한 후에, 변경된 내용을 시스템에 적용하는 명령이다. 그러므로 system-config-network 명령 후에는 꼭 "service network restart" 명령을 수행한다고 생각하면 된다.
+system-config-services(서비스)
+system-config-securitylevel(방화벽)-> 신뢰할 수 있는 장치 : eth0 체크 확인
+service network restart
+
+
+ifconfig <장치이름>
+해당하는 장치의 ip 주소 설정 정보를 출력해 주는 명령이다.
+nslookup
+DNS 서버의 작동을 테스트하는 명령이다.
+>server
+192.168.100.2#53 ->DNS 포트 번호(TCP,UDP)
+>www.naver.com
+ping 
+해당 컴퓨터가 네트워크에서 응답하는지를 테스트하는 간편한 명령이다.
+
+네트워크 설정과 관련된 주요 파일
+system-config-network 명령을 수행하고 나서 변경되는 관련 파일들이다.
+1. /etc/sysconfig/network
+네트워크의 기본적인 정보가 설정 되어 있는 파일
+2. /etc/sysconfig/network-scripts/ifcfg-eth0
+eth0 장치에 설정된 네트워크 정보가 모두 들어 있는 파일
+
+3. /etc/resolv.conf
+DNS 서버 정보 및 호스트 이름이 들어 있는 파일.
+
+
+실습문제 
+네트워크 카드를 제거하고 , 새로 장착한 후에 정상적으로 네트워크가 될 수 있도록 설저해 보자
+1. VM->Snapshot->설치직후(셧다운) 선택
+2. 랜카드 제거
+3. Add 버튼을 클릭해서 이더넷 카드 장치 유형은 NAT 설정
+4. 부팅
+5. system-config-network->하드웨어 탭 ->네트워크 카드 삭제 ->새로만들기 ->Ethernet을 선택 ->네트워크 아답터 창에서 "AMD PCnet32"를 선택 -> 나머지는 디폴트 진행
+6. 장치 탭 -> 새로만들기 -> 이더넷에 연결 선택 -> AMD PCnet32(eth0)를 선택-> 네트워크 세팅창 정적으로 설정된 ip 주소풀 ip 주소 세팅 , dns 세팅 탭에서 세팅 -> 창 닫기 ->service network restart 명령 -> ping www.yahoo.co.kr 테스트 
+7. system-config.network 설정된 파일을 확인
+vi /etc/sysconfig/network 파일을 열어서 확인
+vi /etc/sysconfig/network-scripts/ifcfg-eth0 명령 확인
+dns 설정 파일은 vi /etc/resolv.conf로 열여서 확인
+8 네트워크 설정이 정상적으로 설정이 되었다. 이번에는 인터넷 안될 경우 DNS 서버 고장 때문인지 아니면 다른 문제 인지 확인
+1. www.empas.com 접속 
+2. DNS 문제 발생 시키자
+ gedit /etc/resolv.conf 열여서 192.168.100.6로 변경
+3. 다시 www.empas.com 연결 시도 인터넷 연결이 안된다. 인터넷이 되지 않는다면 dns 서버의 문제인지, ip설정이 잘못 되었는지인지를 바로 알기가 어렵다. 그 중에서 dns 서버가 원인을 발생 시켰는지 확인해 보자
+nslookup
+server
+Default Server : 192.168.0.2
+Address : 192.168.0.2#53 
+문제가 발생하면 DNS 정보를 수정하고 인터넷 연결을 다시 시도한다.
+
+(5)네트워크 보안을 위한 SELinux
+SELinux(Security Enhanced Linux)는 보안에 취약한 리눅스를 보호하기 위해 탄생하였다. SElinux는 시스템에서 보안에 영향을 미치는 서비스, 권한 등을 제어하도록 할 수 있다. 이를 위해서 강제(Enforcing), 허용(Permissive), 비활성(Disabled) 세 가지 레벨을 지원하며, 설정 파일은 /etc/sysconfig/selinux 파일이다..
+
+가장 강력한 강제(Enforcing)는 시스템 보안에 영향을 미치는 기능이 감지되면 아예 그 기능이 작동되지 않도록 시스템에서 막아준다. 허용(Permissive)은 시스템 보안에 영향을 미치는 기능이 감지되면 허용은 되지만 그 내용이 로그에 남게 되고 화면에도 출력된다. 비활성(Disabled)은 SELinux를 사용하지 않는 것이어서 당연이 보안에는 취약해 진다.
+
+
+
+
+
+
+
+

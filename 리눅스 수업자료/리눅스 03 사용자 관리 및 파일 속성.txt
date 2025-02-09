@@ -1,0 +1,321 @@
+useradd 또는 adduser
+
+#adduser -d <홈 디렉토리> < 사용자명> 별도의 사용자의 홈 디렉토리를 지정
+#adduser -u <사용자 ID> <사용자명> 사용자 id를 순차번호가 아닌 임의로 지정
+#adduser -g <그룹명> <사용자명> 별도의 그룹을 지정
+#adduser -s <셀 파일명> <사용자명> /bin/bash 외의 별도의 셀을 지정
+#adduser -p `openssl passwd <패스워드>` <사용자명> -> 암호화된 Passwd로 설정
+
+#useradd newuser : newuser 라는 이름의 사용자 생성
+#useradd -u 555 newuser : newuser를 생성하면서,  사용자 ID를 555로 지정
+#useradd -g mygroup newuser2 : newuser를 생성하면서, mygroup 이라는 그룹으로 사용자를 포함시킴
+#useradd -d /newhome newuser3 : newuser를 생성하면서, 홈 디렉토리를 /newhome으로 지정함
+#useradd -s /bin/csh newuser4 :newuser를 생성하면서, 기본 셀을 /bin/csh로 지정
+
+adduser -u 601 -g mygroup -s /bin/csh -d /bbb -c "테스트4" test4
+사용자 ID : test5
+쉘 : /bin/ksh
+홈디렉토리 /test5
+암호 : dkagh1234. `openssl passwd dkagh1234.`
+유저 ID : 602
+그룹생성 : testgroup
+커맨트 : 테스트5
+tesgroup 편입
+useradd -s /bin/ksh -d /test5  -u 602 -g testgroup -c "테스트5" test5 ->-p 사용하면 암호길이가 8자 이하로 사용
+
+passwd 사용자의 비밀번호를 지정하거나, 변경한다.
+#passwd newuser :newuser의 비밀번호를 지정(또는 변경) 한다.
+
+usermod : 사용자의 속성을 변경한다. 옵션은 useradd와 동일하다
+usermod -g root newuser :newuser의 그룹을 root그룹으로 변경한다.
+
+userdel : 사용자를 삭제한다.
+#userdel newuser :newuser를 삭제한다. 기본적으로 홈디렉토리가 삭제가 되지 않는다..
+#userdel -r newuser :newuser를 삭제하면서, 사용자의 홈 디렉토리까지 삭제한다.
+
+chage  : 사용자의 암호를 주기적으로 변경하도록 설정한다.
+chage -l newuser : newuser에 설정된 사항을 확인하다.
+chage -m 2 newuser : newuser가 설정한 암호를 사용해야 하는 최소 일자(즉, 변경 후 최소 2일은 사용할 수 있음)
+chage -M 30 newuser : newuser가 설정한 암호를 사용할 수 있는 최대 일자(즉, 변경 후 최대 30일까지 사용 할 수 있음)
+
+chage -E 2013/12/12 newuser : newuser가 설정한 암호가 만료되는 날짜(즉, 2013/12/12 까지만 사용할 수 있음)
+
+chage -W 10 newuser :newuser가 설정한 암호가 만료되기 전에 경고하는 기간(미지정시 기본값 7일)(즉, 암호가 만료 되기 10일 전부터 경고 메시지가 나감)
+
+groups : 현재 사용자가 속한 그룹을 보여준다.
+#groups
+groupdd : 새로운 그룹을 생성한다.
+#groupadd newgroup :newgroup 그룹을 생성한다.
+#groupadd -g 555 newgroup :newgroup을 생성하면서 , 그룹 ID를 555로 지정한다.
+
+groupmod : 그룹의 속성을 변경한다.
+#groupmod -n  mygroup  newgroup:newgroup의 이름을 mygroup으로 변경한다.
+
+groupdel : 그룹을 삭제한다.
+#groupdel newgroup :newgroup을 삭제한다(단, 해당 그룹을 주요 그룹으로 지정한 사용자가 없어야 한다.)
+gpasswd : 그룹의 암호를 설정하거나, 그룹의 관리를 수행한다.
+#gpasswd newgroup :newgroup의 암호를 지정한다.
+gpasswd -A newuser newgroup : newuser를 newgroup의 관리자로 지정한다.
+gpasswd -a user1 newgroup :user1을 newgroup의 사용자로 추가한다.
+gpasswd -d user1 newgroup : user1을 newgroup의 사용자에서 제거한다.
+
+
+실습
+useradd aaa, bbb
+passwd aaa
+
+사용자 및 그룹 관련 파일을  확인해 보자
+1. gedit /etc/passwd
+root 사용자로 부터 iiimd 사용자 까지는 리눅스에서 기본적으로 존재하는 표준 사용자..
+
+test1:x:501;501 ->x는 비밀번호가 x가아니라 /etc/shadow 파일에 별도로 저장 되어 있다.
+사용자 이름: 비밀번호: 사용자ID:사용자가 소속된 그룹 ID:전체이름:홈디렉토리:기본 셀
+test1 사용자 
+이름 : test1
+암호 : /etc/shadow 파일 저장
+사용자 id : 501
+사용자가 속한 그룹id : 501
+전체이름은 생략
+홈디렉토리 : /home/test1 
+로그인 시 제공되는 셀은 /bin/bash다
+-------------------------------------------------
+2.gedit /etc/group 
+그룹명:비밀번호:그룹id:그룹에 속한 사용자명" 이다 마지막의 "그룹의 속한 사용자명"은 생략해도 무방하다.
+
+3. 새로운 그룹과 사용자 생성
+1. newgroup 생성 user1과 user2 사용자 만들어서 소속그룹을 newgroup로 지정하자
+
+groupadd newgroup
+adduser user1 -g newgroup
+adduser user2 -g newgroup
+
+----------------------------------------------------------
+사용자 게정 생성 
+ttt, yyy -> itbank 그룹 편입
+passwd 지정
+/etc/passwd
+/etc/shadow
+/etc/group
+터미널 1 -> ttt 로그인
+system-config-users 
+admin 사용자 계정 생성
+su -
+암호
+ifconfig eth0
+
+
+cat /etc/passwd 명령으로 파일에의 아래 부분에 두 명의 사용자가 추가 되어 있음을 확인
+
+cat /etc/group 확인 -> 그룹명과 그룹id 확인
+cat /etc/shadow -> 파일의 두 번째 부분인 "!!"는 암호화된 비밀번호를 의미한다. 하지만 아직 user1, user2는 비밀번호를 생성해 준 적이 없이 없으므로 의미 없는  "!!"가 들어 있다.
+
+user1과 user2의 비밀번호를 생성 후 다시 /etc/shadow 파일 확인
+passwd user1 -> 
+user1 사용자 암호 지정
+암호지정 확인
+user1 와 user2 암호를 동일하게 입력해도 /etc/shadow 다르게 입력되기 때문에
+/etc/shadow 파일만으로는 비밀번호를 유추할 수 없다는 것을 의미한다.
+
+user1 사용자의 홈디렉토리 확인
+ls -a /home/user1 명령으로 살펴보면 여러 개의 파일이 보인다. 이 파일들은 /etc/skel 디렉토리에 있는 파일과 동일한 것이다 .
+
+즉 adduser 명령을 수행하면 아래와 같은 과정이 수행 
+- /etc/passwd 와 /etc/shadow 파일에 사용자를 추가
+- 별도로 그룹을 지정하지 않았다면, 사용자명과 동일하게 /etc/group 파일에 그룹 추가
+- 별도로 홈 디렉토리를 지정하지 않는다면 /home/<사용자명>으로 디렉토리 생성
+- /etc/skel 디렉토리의 파일을 /home/<사용자명> 디렉토리에 복사
+ 그러므로 앞으로 생성될 사용자에게 어떤 파일을 주고 싶다면 /etc/skel 디렉토리에 배포할 파일을 복사해 놓으면 된다는 것을 알 수 있다.
+
+주로 쓰이는 adduser 또는 useradd 명령어의 옵션을 살펴보면 다음과 같다
+#adduser -d <홈 디렉토리> < 사용자명> 별도의 사용자의 홈 디렉토리를 지정
+#adduser -u <사용자 ID> <사용자명> 사용자 id를 순차번호가 아닌 임의로 지정
+#adduser -g <그룹명> <사용자명> 별도의 그룹을 지정
+#adduser -s <셀 파일명> <사용자명> /bin/bash 외의 별도의 셀을 지정
+
+4. 사용자 변경
+ctrl + alt + F1 -> user1 로그인 
+ifconfig eth0 사용할 수 있는 권한 없음
+su - 명령으로 수퍼유저로 권한을 얻은 후 수행 하자
+ifconfig eth0
+-logout로 로그 아웃 가능
+whoami -> 현재 사용자 확인
+
+5. 사용자 삭제
+현재 사용중인 사용자는 삭제가 불가능
+userdel user1
+userdel user2
+groupdel newgroup
+하지만 사용자의 홈디렉토리 /home/user1과 /home/user2는 그대로 남아 있다.
+디렉토리는 rm -rf /home/<사용자명>으로 삭제
+rm -rf /home/user1
+rm -rf /home/user2
+사용자가 사용하던 홈 디렉토리 까지 삭제하고 싶다면 userdel -r <사용자명>을 사용하며 된다.
+userdel -r ttt -> 홈디렉토리까지 같이 삭제..
+위의 명령어를 이해했다면 x윈도우 system-config-users 명령 사용
+
+-사용자가 퇴사등으로 임시적으로 사용 못하도록 설정
+usermod -s /bin/false로 사용자가 로그인 할 수 없게 만드는 것도 좋은 방법이다.
+추후 사용할 떄는 usermod -s /bin/bsah로 다시능
+인 가능..
+#usermod -s /bin/false fedora 하면 fedora 사용자가 잠시 동안 로그인을 할 수가 없다.
+다시 test1 사용자를 사용하려면 usermod -s /bin/bash 
+
+
+
+
+
+
+
+
+
+
+파일 어드레싱 
+
+파일이나 디렉토리는 그에 해당하는 하나의 inode를 가지고 있으며, 
+
+이 inode는 그 파일에 대한 모든 정보를 가지고 있으며, 한 inode는 64byte로 이루어진다. 
+
+또한 이 inode를 가지고 있는 표를 시스템 inodeTable라고 한다. 
+
+어떤 한 파일이나 디렉토리가 생성되면 하나의 inode가 만들어지고 
+
+그 inode가 inodeTable에 등록되며, 등록되는 entry-number를 그 inode에 대한 inumber라 한다. 
+       
+inode :  한 파일이나 디렉토리의 모든 정보를 갖고 있는 64byte로 구성된 표 
+      
+i-list :  한 파일 시스템에서 파일이나 디렉토리들의 inode를 갖고 있는 표
+inumber  :  inode가 inodeTable에 등록되는 entry-number 
+
+inode의 내용 
+
+
+inode는 파일이나 디렉토리의 모든 정보를 가지고 있는 자료구조를 말하며, 
+
+64byte로 구성되는 표로서 유닉스 시스템은 각 파일에 대한 하나의 inode를 할당한다. 
+
+    파일소유권과 이용할 수 있는 여부에 대한 정보
+
+    파일내용이 들어있는 디스크 내의 물리적 주소 
+    파일의 링크수 
+    파일의 형태 
+    파일의 크기 
+    파일의 만들어진 시간, 최근 사용시간, 최근 수정시간 
+    inode의 최근 수정시간 
+
+* 파일과 디렉토리의 소유와 허가권
+
+ls -l
+
+파일 유형
+D -디렉토리
+- 일반적인 파일
+b -블록 디바이스
+c -문자 디바이스
+l -링크
+
+b 또는 c는 디바이스 뜻한다 .ls -l /dev | more 명령으로 확인해 보면 b 또는 c 가 많이 보인다. b는 블록 디바이스를 의미하는 것으로 대표적으로는 하드디스크, 플로피 디스크, CD-ROM 등의 저장 장치가 있다.  Character Device를 의미하는 것으로 대표적인 것으로 마우스, 키보드, 프린터 등의 입출력 장치가 이에 해당한다.
+
+l 은 link 를 뜻한다 링크란 윈도우즈 '바로가기 아이콘'과 비슷한 개념이다. 링크는 말그대로 연결되어 있는 파일을 의미하고 실제 파일은 다른 곳에 존재하게 된다.
+
+파일 허가권
+
+rw-,r--,r-- 3개씩 끊어서 읽으면 된다.
+r은 read, w는 write, x는 excute의 약어다. 즉 rw- 읽거나 쓸수는 있지만 실행할 수 있는 없다는 의미다.
+rwx로 표시되면 읽고, 쓰고, 실행이 가능한 파일 이라는 의미이다.
+
+첫번째 "rw-" 는 소유자(user)의 파일 접근 권한
+두번째 "r--"는 그룹의 파일 접근 권한
+세번쨰 "r--"는 그외의 사용자에 대한 파일 접근 권한을 의미한다.
+
+소유자      그룹     그외 사용자
+r w -     r - -      r -  -
+4 2 0     4 0 0      4 0  0
+ 6          4          4
+
+소유권 6 -> 2진수 110 ->rw-
+       4 -> 2진수 100 ->r--
+       4 -> 2진수 100 ->r--
+
+파일 허가권 754 ->rwx r-x r-- 이 되므로 소유자는 읽기/쓰고/실행, 그룹 읽고/실행, 그외 사용자 읽기만 가능
+
+파일의 허가권을 변경하는 명령어 chmod가 있다 root 사용자 또는 해당 파일의 소유자만이 실행할 수 있다.
+예 chmod 777 install.log 파일은 모든 사용자가 읽고, 쓰고, 실행할 수 있다는 파일이 되는 것이다.
+허가권이 실행 되도록 되어 있어도 실제로 파일이 실행 가능한 코드가 아니라면 실행 시 오류가 발생할 것이다.
+
+cd /tmp
+su -
+암호 
+chmod 777 1.txt
+
+
+
+chmod 명령을 Symbolic method 방식으로도 사용할 수 있다. chmod u+x <파일명>은 소유자(User)에게 실행(eXecute) 권한을 허가하라(+)는 의미다.
+
+윈도우즈에서는 확장명이 EXE 혹은 COM이어야만 실행 가능한 파일이지만. 유닉스/리눅스에서는 파일의 허가권에 따라 실행 여부가 결정된다. 그러므로 유닉스/리눅스에서는 실행 파일이 확장명이 별로도 존재하지 않는다.
+
+----------------------------------------------------
+사용자 계정 : user3 -> 계정생성
+user3 사용자로 로그인
+문서 -> 2.txt  /tmp
+feadora 문서 수정 할 수 잇도록 파일의 소유권 변경...
+ROOT 만든 텍스트 문서를 읽기 ->
+파일의 허가권 777 ->fedora 사용자..
+
+파일 소유권
+파일소유권은 파일을 소유한 사용자와 그룹을 의미한다. install.log 파일은 소유자도 root 그룹도 root로 되어 있다
+chown <새로운 사용자명>[.<새로운 그룹명>] <파일명>
+chown fedora install.log는 파일의 소유자를 fedora로 바꾸하는 의미고 
+chown fedora.fedora install.log 파일의 그룹도 fedara로 바꾸라는 의미이다.
+chgrp fedora test -> test 파일의 그룹을 fedora로 변경
+chown fedora.fedora test ->test 파일의 사용자 및 그룹을  fedora로 변경
+su - fedora ->Fed
+사용자로 접속함(root가 접속 할 경우에는 암호를 물어보지 않음)
+pwd -> 현재 디렉토리 확인
+ls /root/test
+ls -l / -> 디렉토리의 리스트 확인
+rwxr-x--- 로 되어 있기 때문이다. 마지막 ---가 그외 사용자에 대한 허가권인데 읽기/쓰기/실행에 대해 아무런 권한이 허가 되지 않았으므로 /root 디렉토리 자체에 대한 접근이 거부된 것이다. 그래서 비록 /root/test 파일의 소유자가 fedora에게 있더라도 사용을 할 수 없다
+
+우선 다시 root 사용자가 test 파일을 /home/fedora로 옮겨주고 다시 허가권을 변경하자 별 이상 없이 잘 수행될 것이다.
+exit
+mv test /home/fedora
+su - fedora
+pwd
+ls -l test
+chmod 777 test
+ls -l test
+
+이번에는 chown root.root test 명령으로 test의 소유권을 다시 root 사용자에게 돌려 주자
+
+그런데 명령을 허용 되지 않았다. 지극히 정상적인 상황이다. 만일 이 test 파일이 심각한 바이러스  파일인데 지금 명령이 수행되었다고 생각해 보라 . fedora 사용자가 맘대로 root 사용자에게 바이러스 파일을 전달하는되는 것이다. 그렇기 때문에 파일의 소유권을 바꾸는 chown 명령은 root 사용자만 수행이 가능한 것이다.
+
+
+링크 -> 심볼릭 링크 -> 윈도우의 바로 가기 아이콘이랑 비슷
+ln -s <링크 대상 파일명> <링크 파일명> 으로 하면된다
+
+* 실습 하드 링크와 소프트 링크 생성
+ 
+1. mkdir linktest 파일 basefile 파일 생성
+2. ln basetest hardlink
+   ln -s basetest symbollink
+   ls -il
+링크 설정
+
+cat hardlink
+cat symbolink
+
+원본파일과 하드 링크 파일은 incode 번호/크기/파일 수정 시간이 모두 같으며, 심볼릭 링크는 단지 원본 파일과 연결 되어 있는 것을 볼 수 있다..
+
+3. 원본 파일을 다른 곳으로 이동 후 하드링크와 심볼릭 링크를 확인해 보자.
+mv basetest ../
+ls -il
+하드링크는 디렉터리에서 원본 파일이 없어져도 아무런 이상이 없고, 소프트 링크는 디렉토리에서 원본 파일이 없어지면 연결이 끊어지게 되는 것이다..
+
+하드링크는 원본파일을 직접 연결한 형태이며, 위치 경로가 바뀌어도 직접 연결 되어 있어도 계속 링크가 걸리나 심볼릭 링크는 원본 파일의 위치정보를 가지고 있기 때문에 원본의 위치가 바뀌면 원본을 실핼 할 수가 없다.
+
+
+4. 원본파일을 디렉토리로 가져와서 다시 확인
+mv ../basetest .
+ls -il -> 링크 상황을 볼 수 있는 명령어이다.
+
+ 
+

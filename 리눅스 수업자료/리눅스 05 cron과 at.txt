@@ -1,0 +1,84 @@
+cron 과 at
+주기적으로 반복되는 일을 자동적으로 실행 될 수 잇도록 설정해 놓은 것을 cron 이라고 한다. 만약 회사에서  시스템의 사용이 가장 적은 새벽 5시에 백업을 받아야  한다면 반복되는 작업을 처리 할 수 있다.
+
+관련된 데몬(서비스)은 crond이며, 관련 파일은 /etc/crontab이 있다.
+             /etc/crontab 파일
+                     |
+시간별				일별 			주별			월별
+/etc/cron.hourly	/etc/cron.daily/		/etc/cron.weekly/	/etc/cron.monthly/
+
+01 *  *  *  * root run-parts /etc/cron.hourly
+02 4  *  *  * root run-parts /etc/cron.daily
+03 *  *  *  0 root run-parts /etc/cron.weekly
+01 4  1  *  * root run-parts /etc/cron.monthly
+
+첫 행의 의미를 파악해 보자, 분, 시, 일, 월, 요일 , 권한 , 실행 명령순으로 되어 있다.
+01분 마다 모든 시에, 모든 일에, 모든 월에, 모든 요일에, root 권한으로, /etc/cron.hourly/ 디렉토리의 파일을 실행 이라고 해석할 수 있다.
+단 3번쨰 행에서 요일 부분에 써있는 0은 일요일을 의미한다. 0-6까지 일요일-토요일 의미하게 되는 것이다.
+
+♣ at
+
+cron은 주기적으로 반복되는 작업을 예약하는 것이지만, at은 일회성 작업을 예약하는 것이다,
+즉, at은 예약을 해 놓으면 한 번만 실행되고 소멸되는 것이다.
+
+예약 : #at < 시간>
+# at 3:00am tomorrow 내일 새벽 3시
+# at 11:00pm January 30  1월30일 오후 11시
+# at now + 1 hours 1시간 후
+# at now + 3 minutes 
+
+
+at> 프롬프트 예약 명령어 입력 후
+완료되면 CTRL + D
+확인 : #at -l
+취소 : #atrm <작업번호>
+
+실습문제
+매일 새벽 3시 1분에 /home 디렉토리와 그 하위 디렉토리를 /backup 디렉토리에 백업하도록 하자
+1. service crond restart
+2. gedit /etc/crontab으로 예약파일 열고, 매월 수행하는 부분을 열어서 아래와 같이 수정
+01 3 15 * * root run-parts /etc/cron.monthly
+
+3. /etc/cron.monthly/ 디렉토리에 메세지를 출력하는 스크립트 파일을 만들고, 속성을 실행 가능 하도록 바꿔준다.
+
+cd /etc/cron.monthly/
+#touch myBackup.sh
+chmod 755 myBackup.sh
+ls -l
+
+4. myBackup.sh의 내용을 아래와 같이 입력한다.
+아래의 내용은 현재 날짜를 추출해서 /backup 디렉토리에 "backup-<현재날짜>.tar.bz2"으로 /home 디렉토리 전체의 백업을 생성 하라는 의미다,
+gedit myBackup.sh
+#! /bin/sh
+
+set $(date)
+fname="backup-$2$3.tar.bz2"
+
+tar cfj /backup/$fname	/home
+
+5.  백업을 디렉토리를 생성해 주고. crond 데몬을 재시작한다.
+mkdir /backup
+service crond restart
+6. 날짜를 강제로 바꿔주고 테스트해 보도록 하자.
+"date" 명령으로 "01월15일03시00분2015년"(011503002015)으로 날짜를 강제적으로 바꿔주고, crond 서비스를 재시작한다. 1분 정도 기다린 후에 설정된 내용이 잘 실행 되었는지 확인해 보자
+또, 2월로 시간을 바꾸고 다시 실행을 한다. 계속 백업된 데이터가 쌓이는 것을 확인 할 수 있다.
+
+date 011503002015
+service crond restart
+date
+ls -l /backup/
+date 021503002015
+service crond restart
+date
+ls -l /backup/
+
+7. 내일 새벽  4시에 시스템을 최신 패키지로 업데이트 하고, 완료되면 시스템을 재부팅 하는 것을 at으로 예약한다.
+rdate 명령어 : 타임서버로 부터 로컬서버의 시간 설정(시간동기화명령어)
+rdate -s time.bara.net # 시간을 설정
+at 4:00 am tomorrow
+at>yum -y update
+at>reboot
+at><EOT>
+at -l
+
+

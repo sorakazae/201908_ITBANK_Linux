@@ -1,0 +1,25 @@
+mysql 설치 및 운영
+1. rpm -qa mysql*
+2. yum -y install mysql-server
+3. service mysqld status
+4. quit
+5. root사용자에게 1234 패스워드 설정
+mysqladmin -u root password '1234' -> 생성
+6. mysql -> root 암호가 설정 되어 있어서 접근 불가능
+mysql -u <사용자 > -p<비밀번호>
+mysql -u root -p -> '1234'
+7. www.mysql.com 제공해 주는 windows 에서 mysql 접속 프로그램 ->downloads ->Mysql Community Server -> Windows 접속 프로그램 다운로드
+8. mysql-essential-4.1.2-wins32-msi->custom->ClientPrograms ->확장->mysql server instance config 사용안함 
+Client Programs ->change ->c:\mysql -> 이메일 skip
+9. c:\mysql\bin\  ->mysql -h 192.168.100.150 -u root -p
+10 mysql 서버
+mysql -u root -p 
+암호 : 1234
+-> 192.168.100.202 클라이언트 컴퓨터에서 mysql 서버에 접속할 수 있도록 권한을 부여
+mysql >use mysql
+mysql > grant all privileges on *.* to 'root'@'192.168.100.202'
+mysql >select user, host from user where user not like ''; 
+->identified by '4321';-> 암호재설정
+11 클라이언트 xp
+c:\mysql\bin\  ->mysql -h 192.168.100.150 -u root -p
+암호 :4321

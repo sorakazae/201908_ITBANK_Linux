@@ -1,0 +1,315 @@
+IDE와 SCSI 장치의 구성
+기본적으로 우리가 운영하고 있는 Fedora Server 아래 그림과 같이 구성을하고 있다.
+
+메인보드
+
+IDE 0 		IDE 1		SCSI0:0 ----SCSI0:0 ------/boot / dev/sda1(500m)
+  |        	  | 					swap 공간 /dev/sda2(1GB)
+IDE0:0 IDE0:1   IDE1:0 IDE1:1				   /	 /dev/sda3(14.5GB)
+		/dev/se0				/dev/sda(16GA)
+				SCSI0:1
+				  |
+				  |
+				SCSI0:15
+한 개의 하드디스크를 추가하기 위한 구성도
+
+일반적인 PC에서 사용되는 하드디스크 또는 CD/DVD-Rom \이 IDE 장치(또는 EIDE장치)라고 생각하면 된다.(요즘은 SATA 방식이 더 많이 쓰이지만) 그리고 서버용으로는 주로 SCSI 하드디스크가 사용된다. 물론 IDE나 SCSI든 Vmware에서는 어차피 가짜로 생성하기 때문에 진짜 컴퓨터의 하드디스크 종류와는 전혀 무관하다.
+
+Fedora Server 가상머신에 SCSI 하드디스크를 장착한다.그리고 하드디스크를 3개의 파티션으로 나눴다. 리눅스에서는 처으 장착된 scsi 장치의 이름을 /dev/sda라고 부른다. 또 추가로 장착되면 /dev/sdb, /dev/sdc 등으로 부르게 된다.
+
+그리고 /dev/sda 장치에 파티션을 나누게 되는데 이 파티션을 순차적으로 1, 2, 3을 뭍여서 /dev/sda1, /dev/sda2, /dec/sda3으로 부른다. 위의 그림은 이 상태를 잘 표현하고 있다.
+
+그러므로 SCSI 장치를 물리적으로는 /dev/sda, /dev/sdb, /dev/sdc --- 형식으로 부르면 되고, 그 장치에 파티션이 나눠진 것을 논리적으로 /dev/sda1, /dev/sda2, /dev/sda3, /dev/sdb1, /dev/sdb2 형식으로다 된다.
+
+☞ 하드디스크 추가하기
+
+메인보드
+
+IDE 0 		IDE 1		SCSI0:0 ----SCSI0:0 ------/boot / dev/sda1(500m)
+  |        	  | 					swap 공간 /dev/sda2(1GB)
+IDE0:0 IDE0:1   IDE1:0 IDE1:1				   /	 /dev/sda3(14.5GB)
+		/dev/se0				/dev/sda(16GA)	
+
+				SCSI0:1------/mydata	/dev/sdb1(0.1GB)
+					     /dev/sdb
+					     (0.1GB)
+
+ 하드디스크를 1개를 추가한 결과
+
+리눅스에서는 하드디스크를 장착하면 물리적인 /dev/sdb를 사용하기 위해서는 최소한 1개 이상의 파티션으로 나눠야 한다. 그래서 논리적인 파티션의 이름은 그림에도 나와 있듯이 /dev/sdb1이 되는 것이다. 리눅스에서는 이 파티션을 그냥 사용할 수 없으며, 반드시 특정한 디렉토리에 마운트 시켜야만 사용할 수 있게 된다. 그래서 우리는 /mydata라는 디렉토리를 만들고 그 디렉토리에 마운트 할 것이다.
+
+하드디스크 1개를 추가하기 위한 전체 흐름
+물리적인 	fdisk  하드디스크  파일시스템 생성(mkfs, ext3)   하드디스크
+하드디스크 장착 ----->  파티션   -----------------------------> /dev/sdb1
+SCSI0:1			/dev/sdb1		
+mount     하드디스크
+--------->/mydata   ------>/etc/fstab에 등록 ->reboot
+
+실습문제
+1. 하드디스크 -> scsi -> 0.1GB 추가 -> 저장이름 : scsi0-1 로 저장
+2. 이제 리눅스 서버를 부팅하고 root 사용자로 로그인한다. 부팅중에 vmware 오른쪽 아래 아이콘을 보면 2개의 하드디스크가 장착되어 있는 것을 확인할 수 있다.
+3. 장착한 하드디스크에 파티션을 할당하도록 하자. 파티션은 1개의 파티션을 할당 하도록 하자. 터미널을 열고 다음과 같이 작업을 해 준다.
+	 
+#fdisk /dev/sdb -> scsi 0:1 하드디스크 선택
+command : n	-> 새로운 파티션 분할
+command action : p -> Primary Partition 선택 
+Partition number (1-4) -> 파티션 번호 1번 선택(primary partition은 최대 4개 까지 생성 가능)
+Frist cylinder :  Enter -> 시작 실린더 번호 입력(1개의 파티션만 계획 중이므로, 첫 실린더만 설정)
+
+Last cylinder : Enter ->  마지막 실린더 번호  입력(1개의 파티션만 계획 중이므로, 마지막 실린더를 설정)
+command :p ->  설정된 내용 확인
+command : w -> 설정 저장
+
+4 할당된 파티션 장치의 이름은 /dev/sdb1이 된다. 파일시스템은 ext3 형식으로 생성하도록 하자.(이 과정이 포맷 과정이라고 생각하면 된다) "mkfs -t <파일시스템> <파티션장치>" 명령을 사용하거나, 쉽게 mkfs.<파일시스템> <파티션장치> 명령을 사용하면 된다.. 용량이 100MB 뿐이라 상당히 빨리 진행될 것이다.
+mkfs.ext3 /dev/sdb1
+5. /dev/sdb1 파일시스템을 사용하기 위해서 디렉토리에 마운트 하자.
+5-1 먼저 마운트할 디렉토리를 만들고 아무 파일이나 /mydata 디렉토리에 복사해 보자
+mkdir /mydata
+cp install.log /mydata/test1
+ls /mydata
+
+5-2 이번에는 포맷이 완료된 /dev/sdb1 장치를 /mydata라는 디렉토리에 마운트하도록 하자.
+mount /dev/sdb1 /mydata
+ls /mydata
+lost + found
+cp /root/install.log /mydata/test2
+ls /mydata
+test2 문서 확인
+이제 /mudata 디렉토리는 /dev/sda3이 아닌 /dev/sdb1에 존재하게 된다. 즉 /mydata 디렉토리에 어떠한 파일을 복사한다는 것은 /dev/sdb1 장치에 파일을 저장한다는 의미가 된다 앞에서 복사한 test2 파일은 /dev/sdb1 장치에 저장되어 있다.
+
+/dev/hda3에 있던 test1 파일은 없어진 것이 아니라 /mydata 디렉토리가 /dev/sdb1에 연결 되어 있기 때문에 잠시 /dev/sda3에 숨어 있다고 생각하면 된다.
+
+5-3  다시 /dev/sdb1으 언마운트(umount) 시켜서 test1 파일이 그대로 있는지 확인해 보자.
+umount /dev/sdb1
+ls /mydata
+test1 확인
+
+test1 원상 복구 되었다. 또한 test2 파일은 없어진 것이 아니라 /dev/sdb1 장치에 그대로 보관되어 있다. 언제든지 /dev/sdb1 을 아무 디렉토리에나 마운트 하면 다시 test2 파일을 사용할 수 있다.
+
+6. 이번에는 컴퓨터를 켤 떄 항상 /dev/sdb1 장치가 /mydata 마운트 되어 있도록 설정하자.
+6-1 /etc/fstab 파일을 vi나 gedit으로 열어서 제일 아래 부분에 다음과 같이 한 줄을 추가하도록 한다.
+/dev/sdb1	/mydata		ext3 	defaults	1	1
+/etc/fstab 파일은 리눅스가 부팅될 때 마다 자동으로 읽는 중요한 파일이다. 이 파일에는 마운트 정보가 수록되어 있으며, 글자가 틀릴 경우 아예 부팅이 되지 않을 수 있으므로 수정할 때는 주의해아 한다.
+
+6-2  수정한 /etc/fstab을 지정한 후 reboot 명령을 입력해서 재부팅하고 root 사용자로 로그인한다.
+6-3 터미널을 열고 /mydata를 확인하면 test2 파일을 확인할 수 있다. 즉 마지막 부분처럼 /dev/sdb1이 자동으로 마운트 되는 것이다.
+
+
+마운트 잘못 설정 했을때 복구하는 방법
+1. 일반모드로 부팅...
+2. Ctrl + d -> 관리자 암호로 입력 -> 복구모드로 설정
+3.  mount -o remount,rw /
+4. su - root 로 전환해서 수정이 가능...
+
+
+02 여러 개의 하드디스크를 하나처럼 사용하자
+LVM 개념 이해
+여러 개의 하드디스크를 관리하려면 불편함 점이 생긴다. 이를 해결할 수 있는 것이 LVM이다 LVM은 Logical Volume Manager의 약자로 꼭 번역하자면 '논리적인 디스크 관리자' 라고 말할 수 있겠다
+
+1. LVM 주요 기능
+여러 개의 하드디스크를 합쳐서 한 개의 파일시스템으로 사용하는 것
+LVM은 여러 개의 디스크를 하나처럼 사용하게 해 줄 뿐만 아니라, 합쳐진 것을 다시 여러 개로 나울 수도 있다. 예로 2TB짜리 2개를 합쳐서 논리적으로 1개로 만든 후에 1TB와 3TB로 나눠서 파일시스템을 사용할 수도 있다.
+
+2. 특징
+- 작은 용량의 하드디스크 여러 개를 큰 용량의 하드디스크 한 개 처럼 사용함
+- 서버를 운영하면서 대용량의 별도 저장 공간이 필요할 떄 활용함
+3. 용어
+-Physical Volume(물리볼륨) :/dev/sda1, /dev/sdb1 ,/dev/sdc1
+-Volume Group(볼륨그룹) : Physical Volume을 합쳐서 1개의 물리적 그룹으로 만드는 것
+-Logical Volume(논리볼룸) : Volume Group을 나눠서 논리적 그룹으로 나눔(1개 이상)
+-Physical Extend :PV가 갖는 일정한 블록
+-Local Extend  : LV가 갖는 일정한 블록
+
+메인보드
+
+IDE 1 	SCSI0---------SCSI0:0 ----SCSI0:0 ---/dev/sda
+				  SCSI0:1 ---/dev/sdb
+					
+				  SCSI0:2 ---1TB /dev/sdc   LVM방식
+				  SCSI0:3 ---1TB /dev/sdd  --3개를 합쳐서 /lvmdata
+				  SCSI0:4 ---2TB /dev/sde	           (4TB공간)
+
+lvm을 구현 하기 위해 하드디스크 3개를 추가한 구성도
+
+LVM 구현
+
+하드디스크 세 개를 한 개처럼 사용하자.
+
+1. LVM 을 구현 하기 위해 하드디스크 3개를 추가한 구성도와 같이 하드디스크 세 개를 추가하자 실습이므로 너무 큰 하드디스크를 사용할 필요는 없다. 1TB 대신에 0.1GB ,2TB 대신에 0.2GB짜리 하드디스크를 장착하자.
+1-1 
+vmware에서 하디스크 3개를 추가하자 
+가상하드디스크 이름은 scsi0-2.vmdk -> 0.1GB, scsi0-3.vmdk -> 0.1GB ,scsi0-4.vmdk -> 0.2GB
+
+2. 리눅스 서버를 부팅하자
+vmware 오른쪽 아래 총 5개의 하드디스크가 보일 것이다.
+3. LVM을 구현하기
+3.1 장착한 SCSI 하드디스크에 파티션을 할당하자. 전의 실습에서는 파일시스템 유형을 별도로 저지정하지 않았다. 그럴 경우에 리눅스 서버는 자동으로 83(Linux) 파일시스템으로 지정한다. 이번 실습은 LVM 실습이므로, 별도로 파일시스템 유형을 8e(Linux LVM)로 꼭 지정해야 한다.
+
+#fdisk /dev/sdc -> scsi 0:2 하드디스크 선택
+command : n	-> 새로운 파티션 분할
+command action : p -> Primary Partition 선택 
+Partition number (1-4) -> 파티션 번호 1번 선택(primary partition은 최대 4개 까지 생성 가능)
+Frist cylinder :  Enter -> 시작 실린더 번호 입력(1개의 파티션만 계획 중이므로, 첫 실린더만 설정)
+
+Last cylinder : Enter ->  마지막 실린더 번호  입력(1개의 파티션만 계획 중이므로, 마지막 실린더를 설정)
+command : t ->  파일시스템 유형 선택
+Hex Code : 8e -> 선택한 파일시스템 유형 번호 입력("L"을 입력하면 유형 번호 출력됨")
+command : P -> 설정된 내용 확인
+command : w -> 설정 저장
+
+3.2 같은방식으로 fdisk /dev/sdd 명령과 fdisk/dev/sde 명령을 실행하도록 하자
+3-3 pvcdreate 명령으로 물리적인 볼륨을 생성하자
+#pvcreate /dev/sdc1
+#pvcreate /dev/sdd1
+#pvcreate /dev/sde1
+
+3-4  위의 3개의 물리적인 볼륨을 하나로 묶는 작업을 하자. 즉 볼륨 그룹을 생성하는 단계이며 명령은 vgcreate를 사용하면 된다. 볼륨그룹 이름은 myVG로 주기로 하자
+vgcreate myVG /dev/sdc1 /dec/sdd1 /dec/sde1
+3-5 vgdisplay 명령으로 볼륨 그룹이 제대로 생성 되었는지 확인해 보자
+#vgdisplay
+VG Name		myVG
+
+중간 생략
+VG Size 	400.00 MB
+생성한 myVG 볼륨그룹이 100MB+100MB+200MB=400MB 크기인 것을 확인 할 수 있따> 이로써 선 처리 작업이 모두 끝났다. 이제부터는 /dev/myVG를 <실습1>에서 했던 하나의 하드디스크인 /dev/sdb처럼  생각하고 작업하면 된다.
+4. 일반적인 하드디스크의 파티션을 생성할 때는 fdisk 명령을 사용했지만 볼륨그룹이 파티션을 생성할 때는 lvcreate  명령을 사용한다. 일반적인 하드디스크 (/dev/sdb)를 파티션(/dev/sdb1)으로 파티션하는 것과 마찬가지로 볼륨 그룹(/dev/myVG)을 논리그룹(/dev/myLG1)으로 파티션을 나눈 것이다
+4-1 .논리그룹을 아래 같은 명령으로 생성하고, /dev/myVG  디렉토리를 확인해보자
+lvcreate -L 400MB -n myLG1 myVG 의 의미는 myVG 아래에 myLG1이라는 논리 볼륨을 생성하되, 크기는 400MB로 하라 
+#lvcreate -L 400MB -n myLG1 myVG
+/dev/myVG/myLG1은 실제로는 /dev/mapper/myVG-myLG1 이라는 파일에 링크 되어 있다. 그냥 취급하기 편하도록 /dev/myVG/myLG1 이라고 생각해도 관계 없다.
+
+5. 한 개의 하드디스크에서 파티션 /dev/sdb1 으 생성한 후에 mkfs.ext3 명령어로 ext3 파일시스템으로 포맷했듯이, /dev/myVG/myLG1 도 똑같이 하나의 하드디스크 파티션과 동일하게 취급하면된다.
+
+#mkfs.ext3 /dev/mapper/myVG-myLG1	
+6. /lvmdata라는 디렉토리를 만들고 논리 볼륨(/dev/myVG/myLG1)을 마운트 시키자. 마운트 시킨 후에는 아무 파일이나 하나 복사해 놓고 "df" 명령으로 여유 공간을 확인해 보도록 하자.
+#mount /dev/myVG/myLG1	/lvmdata
+#cp /root/install.log /lvmdata/test3
+#df
+
+7. 이번에는 컴퓨터를 켤 때 언제든지 /dev/myVG/myLG1 장치가 /lvmdata 마운트되어 있도록 설정하자 /etc/fstab 파일을 vi나 gedit 으로 열어서 제일 아래 부분에 다음과 같이 한 줄을 추가하고 재부팅 하자
+/dev/myVG/myLG1		/lvmdata	ext3	defaults 1 1
+
+-------------------------------------------------------------------------------------------
+사용자별로 공간을 할당하자
+
+리눅스는 어려 명의 사용자에게 동시에 접속해서 사용할 수 있다. 만일 "존밴" 이란 사용자가 시스템을 사용할 때, 존밴이 "/" 파일시스템에 고의든 실수든 큰 파일들을 계속 복사해 넣었다고 가정해보자. 그럼 디스크가 꽉 차게 되면 시스템 전체가 가동되지 않는 치명적인 문제를 일으킬 수 있다 . 그러한 일을 미연해 방지하기 위해서는 각 사용자별로 사용할 수 있는 용량을 제한해야 하는 것이다. 즉 "존밴"아 적정량 이상을 사용하지 못하게 함으로써, 할당된 양만큼의 공간만 사용할 수 있도록 한다면 아무런 문제가 발생하지 않을 것이다..
+
+-쿼터의 개념
+파일시스템 마다 사용자나 그룹이 생성할 수 있는 파일의 용량 및 개수를 제한 하는 것
+
+쿼터를 사용하기 위해서는 quota 패키지를 설치되어 있어야 합니다. 
+# rpm -qa | grep quota 확인해 보면 되며, 기본적으로 설치 되어 있을 것이다.
+
+일반 사용자들이 사용하는 파일시스템 "/" 지정하는 것보다는, 별도의 파일시스템을 지정해서 해당 부분을 쓰도록 하는 것이 여러 가지 면에서 좋다. 우선 실수로 "/" 파일시스템을 사용하지 않으므로 시스템과 관련된 문제를 발생시킬 소지가 적어진다.
+
+또한 "/" 파일시스템을 많은 사용자가 동시에 사용하게 되면 페도라 서버를 운영하기 위해서 다시크를 읽고 쓰는 작업과 일반 사용자가 디스크를 읽고 쓰는 작업이 동시에 발생하므로 전반적으로 시스템의 성능이 저하될 수 있다.
+
+쿼터 진행 순서
+
+/etc/fstab 수정   ---------> 재부팅 또는 리마운팅    ------------->쿼터 DB 생성
+vi /etc/fstab               #mount -o remount /userhome            #cd /userhome
+defaults,usrquota 추가                                            #touch aquata.user 
+								   #chmod 600 aquota.user 
+								   #quatacheck -a -u -m
+
+개인별 쿼터 설정  -------------> 시스템 적용
+#edquata 사용자 ID	        #quotaon /userhome
+
+실습문제 
+사용자를 만들고 해당 사용자에게 공간을 할당하자
+0-1. 하드디스크 추가 -> UserDisk.vmdk로 지정해서 설치
+0-2 다음 순서로 파지셔닝, ext3 파일시스템으로 포맷, /UserHome 디렉토리에 마운트 한다.
+#fdisk /dev/sdb
+command : n
+command action : p
+partition number (1-4) : 1
+First cylinder :Enter
+Last Cylinder : Enter
+command : P 
+command : w
+#mkfs.ext3 /dev/sdb1 -> 꼭 ext3으로 포맷할 것
+#mkdir /username
+#mount /dev/sdb1 /username
+0-4 재부팅해도 인식되도록 /etc/fstab 제일 아래에 다음을 추가한다.
+/dev/sdb1 	/username	ext3	defaults 	1	1
+
+1. 쿼터 실습을 할 사용자 "john"과 "bann"을 만들고, 비밀번호는 사용자 이름과 동일하게 설정하자.
+#useradd -d /userhome/john john
+#useradd -d /userhome/bann bann
+#passwd john
+#passwd bann
+ 이름과 동일한 암호 설정
+
+2. /etc/fstab을 편집
+2-1 vi나 gedit으로 /etc/fstab 파일을 열어서 /dev/sdb1이 마운트되는 부분에 다음과 같이 ",usrquota"라고 추가해준다.(글자에 주의 userquota 아니라 usrquota다 틀리면 안된다)
+ 
+/dev/sdb1	/userhome	ext3	defaults,usrquota 1	1
+2-2 재부팅을 하거나 mount -o remount /userhome
+2-3 mount 명령으로 확인해보면 /dev/sdb1 "쿼터"용으로 마운트된 것이 확인된다.
+#mount
+
+3. 쿼터를 사용하기 위해서는 쿼터 DB를 생성해 줘야 한다. 다음 명령어를 차례로 수행하자(좀 생소한 명령어들이지만 쿼터 DB를 생성할 때만 한번 사용되는 것이므로 외울 필요는 없을 것 같다.)
+
+#cd /userhome : 쿼터용 파일시스템이 마운트된 디렉토리로 이동 
+#touch aquota.user -> 빈 파일 생성
+#chmod 600 aquota.user -> 보안을 위해서 소유자(root)  외에는 접근하지 못하도록 함
+#quotacheck -a -u -m -> 사용자(-u)에 대해서 쿼터를 실행
+
+4. 쿼터 DB 생성이 완료 되었으므로 이제는 각 사용자별로 공간을 할당해 줘야 한다.
+4-1 "john" 사용자와 "bann" 사용자가 사용할 수 있는 공간을 각각 7MB씩 할당하자. "edquota"명령을 실행하면 각  사용자별로 또는 그룹별 할당량을 편집할 수 있다. 해당 명령을 실행한 후의 사용법은 vi 에디터와 동일하다
+#edquota -u john
+
+Filesystem	blocks		soft	hard	inodes	soft	hard
+/dev/sdb1	 32		  0	  0	   8     0 	  0
+
+Filesystem : 사용자별로 쿼터를 할당하는 파일시스템을 의미한다. 우리는 /etc/fstab 파일에 /dev/sdb1을 usrquota 로 설정해 놓았다.
+blocks ,soft, hard : 현재 사용자가 사용하는 블럭(KB)과 소프트 한도, 하드 한도를 의미한다.
+Blocks에 8이 써 있으므로 현재 8kb를 john이라는 사용자가 사용하고 있다는 의미이다. soft와 hard 아래의 0은 사용한도가 0이라는 의미가 아닌, 한도를 제한하지 않았다는 의미이다. 즉 john 사용자는 용량의 제한 없이 /dev/sdb1 파일시스템(/userhome에 마운트되어 있음)을 사용할 수 있다는 의미이다.
+-inodes, soft, hard : blocks는 용량을 의미하지만 inodes는 inode의  개수를 의미한다(쉽게 파일의 개수라고 생각하자.) 현재 john은 현재 8개의 파일을 사용하고 있고, 한도는 제한하지 않았다는 의미이다.
+
+4-2 inodes 부분은 그냥 두고, blocks 부분으로 사용량의 제한을 걸어보자. john의 사용량을 soft는 7MB(7168kb), hard는 10MB(10240kb)로 제한하고 저장하자, 칸을 정확히 맞출 필요는 없고, 차례만 틀리지 않으면 된다.(vi 에디터를 사용하듯 a 키를 눌러 시작하고, 편집이 끝나면 ESC키를 누르고 :wq를 입력하면 된다.)
+
+-사용자별이 아닌 그룹별로 쿼터를 설정하기 위해서는 "edquota -g 그룹명" 으로 사용하면 된다.
+4-3 이제는 john 사용자가 사용할 수 있는 용량이 설정된 대로 제한되어 있는 확인하도록 하자. john 사용자로 접속한 후에 파일을 몇개 복사해 보도록 한다 /boot/vmlinuz-2.629-4..PAE 파일의 사이즈가 약 3MB이므로 파일을 사용해 보자
+
+#quotaon /userhome  ->쿼터 시작
+su - john
+pwd
+cp /boot/vm[tab] test1 -> 약 3mb 사용
+cp test1 test2
+cp test1 test3		-> 약 9MB 사용(소프트 한도인 7MB를 초과함)
+cp test1 test4          -> 하드 한도(10MB)를 초과화여 더 이상 사용할 수 없음 'test4' 파일은 하드 한도까지 사용하 수 있는 남은 용량(약 1MB) 만큼만 생성됨 그러므로 test4는 정상적인 파일이 아님
+
+4-4 john 사용자가 자신에게 할당된 디스크를 공간을 확인하려면 "quota" 명령을 확인하면 된다.   
+ Filesystem	blocks		quota	  limit		grace	files	quata limit grace
+/dev/sdb1	 10240+		 7168	  10240		 6days    12  	  0     0    0
+
+의미를 파악해 보자. blocks는 현재 사용자 john 가 사용하고 있는 디스크 공간이다. 그런데 limit(=hard)가 10240kbyte이므로 이미 제한된 사용량을 모두 사용하고 있는 것이다. 드런데 john에게 허용된 실제 사용량은 quota(=soft)인 7648kb가 된다. 이르 넘는 공간인 3072kb(10240-7168)은 grace(유예기간)동안인 6일(또는 7일) 동안만 사용할 수 있는 것이다. 그러므로 john 사용자는 6일 안에 자신의 사용량인 7168kb를 넘는 공간을 빨리 정리해야 한다.
+
+5. 유예기간(grace) 6일이 경과하면 어떻게 되는지 확인해 보자
+5-1
+#exit
+whoami
+#date
+#date -s '1 month'
+reboot 명령으로 재부팅하고 root 사용자로 접속한 후 터미널을 하나 연다.
+5-2 다시 john 사용자로 접속해서 할당량을 확인해 보자
+#su - john
+# quota
+ls -l
+더 이상 유예기간이 없는 것(None) 을 확인할 수 있다. 또한 공간을 넘는 파일인 test4 사용량은 0으로 변했다. 즉 리눅스 시스템이 다시 공간을 회수해 간 것이다.
+
+6. requota 명령으로 사용자별로 현재 사용량을 확인해 보도록 하자. root 사용자의 권한으로 실행해야 한다.
+# exit
+#repquota /userhome
+
+소프트 한도를 초과한 사용량에 대한 유예 기간(grace period)은 기본값으로 7일로 설정되어 있다,. 이 유예기간을 변경하기 위해서는 'edquota -t"를 사용해서 변경하면 된다.
+
+7. 이번에는 bann 사용자에게도 john 사용자와 똑같이 사용량을 할당하도록 하자. john 사용자에게 적용된 사항을 bann 사용자에게도 적용시켜 주면 좀더 간단히 작업할 수 있다. 
+edquota -p 기준사용자 적용할 사용자 명령으로 사용하면 된다
+#edquota -p john bann
+#repquota /userhome-> 사용자별 유예기간을 확인 할 수 있다...
+더 이상 quota를 사용하지 않으려면 quotaoff /userhome 명령을 사용하면 된다
+
+.
+ 

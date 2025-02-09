@@ -1,0 +1,776 @@
+
+[ITBANK Andylec 주말 리눅스 1 과정]
+
+▣오늘의 수업내용(5일차)
+계정관리
+퍼미션과 소유권
+
+
+▣공지사항
+-다음 달 수강신청을 해 주시기 바랍니다.
+
+
+<계정 관리(User Account Management)>
+
+▣학습개요
+-리눅스를 집에서 혼자 사용할 경우에는 항상 root 로 로그인해서 작업을 
+하실 수 있습니다.
+-리눅스 운영체제는 다중 사용자 운영체제로 여러 사람이 이용하는 서버인 
+경우에는 리눅스 서버 관리자 루트(root)가 아이디를 생성하고 암호를 
+지정해 주어야 로그인해서 리눅스 운영체제를 이용할 수 가 있습니다.
+-리눅스에서 프로그램을 설치할 때도 사용자와 그룹을
+추가해주어야하는 경우도 있습니다.(예:오라클)
+
+
+▣사용자 및 그룹 관리
+
+☞계정관리 관련 파일
+/etc/passwd              : 계정 정보 저장
+/etc/shadow              : 사용자의 인코딩된 암호 및 암호 사용기간 저장
+/etc/gshadow            :  그룹 암호 정보 저장
+/etc/group                : 그룹 정보 저장
+/etc/login.defs           : UID, GID 범위
+/etc/default/useradd   : 디폴트값 저장
+/etc/skel                   : 계정 추가시 복사 될 파일이 있는 디렉토리
+/home                      : 일반 사용자 홈디렉토리 베이스 
+
+
+☞계정관리 명령어
+1)계정(사용자) 추가(add)         ---> adduser, useradd
+2)계정 삭제(delete)                 ---> userdel 
+3)사용자 정보 수정(modify)     ---> usermod 
+4)그룹 추가                           ---> groupadd
+5)그룹 삭제                           ---> groupdel
+6)그룹 정보 수정                    ---> groupmod
+7)암호 설정 및 변경                ---> passwd
+
+
+☞사용자 추가 명령어: adduser, useradd
+옵션)
+-c : 사용자 설명(comment)
+-d : 홈디렉토리(directory)
+-e : 계정 사용기간 제한(만료날짜:expire)
+-f : 암호사용기간 만료후 계정 잠금(Lock)할 날짜수
+-g : 기본그룹
+-G : 보조그룹
+-u : UID(유저번호)
+-m -k : skel 디렉토리 지정
+(계정 추가시 /etc/skel 디렉토리 내용이 복사된다.)
+-M : 홈디렉토리 생성 안 함
+-s : 쉘지정
+
+▷사용자 이름(Account Name, Login Name)은 한글은 안되고 
+일반적으로 영문 또는 영문과 숫자를 조합해서 지정한다. (user, user1, user01)
+▷@, #, !, *, %, ~ 같은 특수문자를 사용자 이름에 사용할 수 없다. 
+▷사용자 이름에 _(언더바) 와 .(점)은 사용 가능(andy.kim, andy_kim)
+▷사용자 이름에 $ 는 마지막 문자로 사용가능(nice$ 는 가능)
+▷그리고 대소문자를 구분한다.
+▷#은 쉘이 주석(설명)으로 처리한다.
+
+
+☞그룹(Group)
+사용자를 묶어 놓은 개체
+회사의 부서
+
+
+///////////////////////////////////////////////////////////
+[신상품 보고서]
+
+
+       마케팅부 ---> 그룹
+       홍길동 ---> 사용자
+///////////////////////////////////////////////////////////
+
+
+///////////////////////////////////////////////////////////
+이름 : 홍길동
+부서 : 총무부, 인사부, 기술부
+
+
+사용자 : apple
+그룹    : apple,  sys,  adm 
+---> apple 이 기본그룹, sys 와 adm 은 보조그룹
+///////////////////////////////////////////////////////////
+
+
+☞기본 그룹(1차 그룹)과 보조 그룹(2차 그룹)
+그룹에는 기본 그룹(Initial Group,Primary Group)과 
+보조그룹(Supplementary Group,Secondary Group)이 있다.
+
+기본 그룹은 반드시 지정되어야 하는 그룹(-g 옵션)이고 
+보조그룹은 선택적으로 지정할 수 있는 그룹(-G 옵션)이다.
+
+-g : 기본 그룹 지정(initial group)
+--->파일 생성시 기본 그룹으로 지정이 되고
+      ls -l 로 보았을 때 출력되는 것이 기본 그룹이다.
+
+-G : 보조 그룹 지정(supplementary group)
+
+기본 그룹은 1개만 지정 가능하고
+보조 그룹은 여러 개 지정 가능하다.
+
+
+▣명령어 연습
+#adduser  또는  #useradd
+(사용법 출력됨)
+
+#adduser  james
+--->옵션이 없으면 디폴트 값으로 적용 됨
+
+#mkdir  /users
+#adduser  -c  "James Bond"  -d  /users/james2   james2
+
+-c : 계정에 대한 설명(commnet) 지정하는 옵션
+-d : 홈디렉토리 지정 옵션
+
+--->James Bond 에서 옵션의 인자값이 공백을 포함하고 있으면 
+쿼팅을 사용해야 한다.
+--->홈디렉토리 지정시 상위 디렉토리는 이미 만들어져 있어야 한다.
+--->위의 예제는 옵션 순서를 변경해도 된다.
+
+
+#ls  /users
+james2 디렉토리가 생김
+
+#cat  /etc/passwd
+(계정 등록 파일)
+james:x:502:502:James Bond:/users/james:/bin/bash
+아이디:패스워드자리:UID:GID:설명:홈디렉토리:쉘
+1)            2)            3)   4)    5)      6)          7)
+
+1)사용자명(login name, account name)
+2)암호자리(place holder)
+3)사용자 번호(User ID)
+4)그룹번호(Group ID)
+5)comment 정보
+6)사용자의 홈디렉토리 위치
+7)로그인시 사용하는 쉘 위치
+
+#cat  /etc/shadow
+(암호 등록 파일)
+james:!!:15380:0:99999:7:::
+아이디:인코딩암호:암호변경한날짜:min:max:warning:inactive:expire
+1)             2)               3)            4)    5)     6)         7)        8)
+
+1)사용자명
+2)암호화된 패스워드
+3)최종암호변경일 : 1970년 1월 1일을 기준으로 날짜수로 표현 됨
+4)암호변경 최소일 수 : 최종암호변경일을 기준으로 최소일수가 지나야만 암호변경 가능
+5)암호변경최대일수 : 최종암호변경일을 기준으로 현재 암호를 변경하지 않고
+사용할 수 있는 날짜수
+6)경고일 수 : 암호 최대 사용기간에 가까와 질 때 며칠 전에 경고를 보낼 것인지 지정하는 항목
+7)비활성화 설정 : 암호 최대사용기간 만료후 설정된 날짜수까지 로그인 하지 않으면 계정이 락(lock) 됨
+8)계정 만기일 : 사용자가 시스템을 마지막으로 사용할 수 있는 날짜
+
+두번째 항목 !! 는 계정이 락(Lock)되어 있다는 의미이다.
+--->로그인을 못하는 상태
+
+
+#cat  /etc/group
+(그룹이 저장되는 파일)
+james:x:502:
+그룹명:x:GID
+
+
+--->계정을 추가하면 /etc/passwd, /etc/shadow, /etc/group 에
+     동시에 등록되고 암호를 지정해 주어야 로그인 할 수 있다.
+
+
+#passwd  james
+암호 동일하게 두 번 입력(입력시 안 보임)
+--->james 계정의 암호 설정
+--->root 는 짧은 암호를 설정해 줄 수 있다.(단, enter 를 두번 입력하면 안 된다.)
+--->일반 사용자는 짧은 암호 또는 단순한 암호를 사용할 수 없다.
+--->#passwd 만 입력하면 현재 로그인한 계정의 암호가 변경 됨
+--->관리자 계정 루트는 다른 계정의 암호 설정을 할 수 있고
+     일반 계정은 자신의 암호만 변경할 수 있다.
+
+
+#cat  /etc/shadow
+james:$1$5Two1EpN$VfNAvgg6HHICI.DLvCO6J0:15380:0:99999:7:::
+#
+---> !! 에서 인코딩된 문자열로 변경됨
+---> 암호는 인코딩(암호화)되서 shadow 파일에 등록된다.
+---> james 계정이 암호를 잃어버린 경우에는 
+      root 가 암호를 다시 설정해 주면 된다.
+
+
+※로그인 처리 과정
+
+login       : 사용자ID
+password : 암호
+
+암호를 잘못 입력하였을 경우에는 백스페이스키(←) 를 이용하여 
+지우고 다시 입력할 수 있다.
+(Delete 키로 암호 삭제 불가)
+
+/etc/passwd : ID 확인
+/etc/shadow  <---------> 사용자가 입력한 암호 인코딩
+                         비교
+
+1)사용자 아이디 입력
+2)암호 입력
+3)/etc/passwd 에서 아이디 확인
+4)사용자가 입력한 암호를 인코딩
+5)4번과 /etc/shadow 의 내용을 비교후 일치하면 로그인 되고
+   틀리면 로그인 거부 됨
+
+
+#mkdir  /skel2
+#touch  /skel2/usertest.txt
+
+#adduser  -u 600  -m  -k  /skel2  james3
+---> james3 계정 추가시 사용자 번호는 600 으로 하고
+/skel2 디렉토리의 내용을 james3 의 홈디렉토리에 복사하라는 의미
+---> -k 옵션은 -m 옵션과 함께 사용
+
+cf)
+-M 옵션은 홈디렉토리를 만들지 않는 옵션
+
+
+#grep  james  /etc/passwd
+james:x:502:502:James Bond:/users/james:/bin/bash
+james3:x:600:600::/home/james3:/bin/bash
+
+
+#ls  /home/james3
+#ls  /skel2
+---> -m -k  /skel2 옵션을 사용하였으므로
+/etc/skel 이 복사되지 않고 /skel2 의 내용이 복사 됨
+
+--->계정을 추가하면 /etc/skel 디렉토리의 내용이 계정의 
+홈디렉토리에 자동적으로 복사된다. 
+--->/etc/skel 에는 주로 쉘설정파일들이 들어가 있다.
+---> -m  -k  옵션은 /etc/skel 디렉토리가 아닌 다른 디렉토리를 지정할 때 사용
+
+
+☞계정 삭제
+#ls  /home
+apple   green2   james3
+#
+
+#userdel  james3
+계정 삭제(홈디렉토리는 남는다.)
+
+#ls  /home
+apple   green2  james3
+
+#grep  james  /etc/passwd
+#grep  james  /etc/shadow
+#grep  james  /etc/group
+
+#grep  james  /etc/{passwd,shadow,group}
+
+---> 계정을 삭제하면 위의 3파일에서 모두 삭제된다.
+      계정삭제시 옵션을 사용하지 않은 경우 홈디렉토리는 수동으로 
+      삭제해야 한다.
+
+
+#adduser  green2
+#ls  /home
+apple   green2   james3
+
+
+#userdel
+#userdel  -r  green2
+계정 삭제시 홈디렉토리도 지우려면 -r 옵션 사용
+
+#ls  /home
+apple   james3  
+#
+
+☞디폴트 옵션 확인 및 변경
+adduser  -D 
+-b 홈디렉토리
+-e 만료날짜
+-g 그룹변경
+-s 쉘변경
+-f 비활성화
+
+#adduser -D
+GROUP=100
+HOME=/home
+INACTIVE=-1
+EXPIRE=
+SHELL=/bin/bash
+SKEL=/etc/skel
+CREATE_MAIL_SPOOL=yes
+
+INACTIVE(비활성화)=-1
+-1 이면 disable 상태
+ 0 이면 암호 사용기간이 만료되자마자 계정 사용 불가능
+
+
+☞계정추가시 적용되는 디폴트 옵션 변경하기
+#adduser -D  -b  /users
+#adduser -D
+GROUP=100
+HOME=/users
+INACTIVE=-1
+EXPIRE=
+SHELL=/bin/bash
+SKEL=/etc/skel
+#
+
+#adduser  pizza
+#tail  -3  /etc/passwd
+pizza:x:504:504::/users/pizza:/bin/bash
+(홈디렉토리가 /users 로 설정됨)
+
+#ls /users
+james  pizza
+#
+---> /users/pizza 디렉토리가 생성 됨
+
+
+☞홈디렉토리 베이스 원래대로 설정
+#adduser  -D  -b  /home
+#adduser  -D
+
+
+☞사용자 정보 변경 : usermod (User Modify)
+-c comment
+-d 홈디렉토리
+-e 만료날짜
+-g 기본그룹
+-G 보조그룹
+-s 쉘변경
+-u UID 변경
+-L 락
+-U 언락
+
+#adduser  nice
+#grep  nice  /etc/passwd
+
+#usermod 
+(사용법이 출력됨)
+
+#usermod  -c  "hong kil dong"  -d  /work  nice
+---> usermod 를 사용하면 /etc/passwd 파일의 내용이 변경되는 것이며
+홈디렉토리가 생성되거나 /etc/skel 이 복사되지 않는다.
+
+---> -m(--move-home) 옵션을 이용하여 홈디렉토리 이동은 가능
+(-m 옵션 사용시 디렉토리가 존재할 경우에는 /etc/passwd 파일의 내용만 변경 됨)
+
+
+#grep  nice   /etc/passwd
+#usermod  -l  newuser  nice
+---> login name(사용자 ID) 변경
+#tail  -3  /etc/passwd
+
+
+☞계정 락(Lock) 및 언락(Unlock)
+usermod 또는 passwd 명령 이용
+
+usermod  -L   계정명
+usermod  -U  계정명
+passwd    -l   계정명
+passwd   -u   계정명
+
+/////////////////////////////////////////////////////////////////////
+#man usermod
+  -L     Lock a user’s password.
+  -U     Unlock a user’s password. 
+
+#man passwd
+  -l     This option is used to lock the specified account
+  -u     This  is  the  reverse of the -l option
+/////////////////////////////////////////////////////////////////////
+
+
+#adduser  banana
+#passwd  banana
+1234
+1234
+
+#grep  banana  /etc/shadow
+
+#passwd  -l  banana
+#grep  banana  /etc/shadow
+
+#passwd  -u  banana
+#grep  banana  /etc/shadow
+
+☞그룹추가
+#groupadd   student
+#tail  -3  /etc/group 
+
+-그룹을 추가하면 똑같은 이름의 사용자 계정이 자동으로 생성되지 않는다.
+-계정을 추가하면 계정과 똑같은 그룹이 등록되고
+UID(사용자번호)와 GID(그룹번호)는 파일의 Maximum 숫자 + 1 로 등록된다.
+
+
+☞그룹수정
+#groupmod  -g 777  student
+--->그룹 번호 수정
+#tail  -3  /etc/group
+
+
+
+☞그룹 삭제
+#groupdel  student
+#tail  -3  /etc/group
+
+
+▣chage 명령어
+암호 사용기간, 계정 사용기간 확인 및 설정 명령어
+
+chage  -l  계정명
+--->정보 확인
+
+#chage  -m 3  -M  10  apple
+-m : 암호사용 최소일 수
+-M : 암호사용 최대일 수
+-W : 암호 사용 만료전 경고 날짜 수
+-E : 계정 만료기간(년도-월-일)
+
+#chage  -l  apple
+
+
+#chage  -m -1  -M -1  apple
+옵션값을 -1 로 설정하면 초기화 됨
+
+#chage  -l  apple
+
+
+
+
+▷GUI 를 이용한 계정 관리
+
+#system-config-users
+
+▣실습
+1. 그룹추가
+  그룹이름(그룹번호)
+  business(1001)   sales(1002)    tech(1003)
+2. 사용자 추가 
+  사용자명 : user1                          사용자명 : user2
+  유저번호 : 1001                           유저번호 : 1002
+  기본그룹 : business                      기본그룹 : user2
+  보조그룹 : sales, tech                    보조그룹 : tech
+  설명 : test man1                          설명 : test man2 
+  홈디렉토리 : /users/user1              홈디렉토리 : /home/user2
+  암호 : 1234                                  암호 : 1234
+  암호사용기간 최소일수 : 2              암호사용기간 없음
+  암호사용 최대일수 : 30                 
+  암호만료 경고일수 : 2
+3. Putty 이용하여 로그인 테스트
+※사용자 정보 확인 :  #id  사용자명     #groups  사용자명
+※사용자명과 기본그룹이 동일할 때는 -g 옵션 필요 없음
+
+
+
+/////////////////////////////////////////////////////////////////////
+
+#groupadd  -g  1001  business
+#groupadd  -g  1002  sales
+#groupadd  -g  1003  tech
+
+
+#useradd  -u  1001  -g  business  -G  sales,tech  -c  "test man1"  -d  /users/user1  user1
+#passwd  user1
+#chage  -m 2  -M  30  -W  2  user1
+#chage  -l   user1
+
+
+#adduser  -u  1002  -G tech  -c  "test man2"  user2
+#passwd  user2
+
+
+사용자 정보 확인
+id : 유저번호, 그룹번호 출력
+groups : 문자로 출력
+
+#id  user1
+#id  user2
+
+#groups  user1
+#groups  user2
+
+/////////////////////////////////////////////////////////////////////
+
+
+<퍼미션과 소유권(Permission and Ownership)>
+
+▣학습개요
+-리눅스 운영체제는 퍼미션(권한)과 소유권을 통해 다른 사용자들로부터 
+자신이 만든 파일을 보호할 수 있습니다.
+-관리자는 퍼미션과 소유권을 통해 일반사용자들의 파일
+(또는 디렉토리)에 대한 접근을 제어할 수 있습니다.
+
+
+☞권한을 가지는 개체 : user, group, others
+u ---> user, 소유자(사용자), owner
+g ---> group, 그룹(사용자들을 묶을수 있는 개체, 학교의 동아리, 회사의 부서)
+o ---> ohers, 다른 계정들(everyone)
+a ---> all(3 개체를 모두 가리킴)
+
+
+☞기본권한(permission)
+r   read      4 (읽기)
+w  write     2 (쓰기)
+x  execute  1 (실행)
+
+7 rwx
+6 rw-
+5 r-x
+4 r--
+3 -wx
+2 -w-
+1 --x
+0 ---
+(권한이 없을 때는 - 로 표시)
+
+
+☞r, w, x 의 의미
+ 1. r (read)
+   파일      : 파일의 내용을 볼 수 있다.
+   디렉토리 : 디렉토리의 내용을 ls 로 볼 수 있다.
+ 
+ 2. w (write)
+    파일      : 파일을 수정할 수 있다.
+    디렉토리 : 디렉토리의 내용을 변경할 수 있다.
+    (파일을 삭제할 수 있는 권한은 파일의 w 권한이 아니고 
+    그 파일이 있는 디렉토리에 w 권한이 있어야 파일이 삭제된다.)
+
+ 3. x (execute)
+    파일      : 파일을 실행할 수 있다.
+    디렉토리 : 디렉토리 안으로 cd 를 이용하여 들어갈 수 있다.
+
+---> 퍼미션과 소유권은 일반 계정들에 대해서는 정확하게 
+      적용되고 수퍼유저인 루트는 파일의 실행권한 만 빼고 퍼미션과 
+      소유권을 초월한다.
+(루트라 할지라도 파일에 실행권한이 있어야 실행할 수 있다.)
+
+
+
+☞파일 또는 디렉토리 퍼미션 변경 : chmod(Change Mode)
+(파일 소유자나 루트만이 사용할 수 있다.)
+ -R 옵션 : 하위 디렉토리 및 파일을 모두 변경할 때 사용
+
++ //권한 추가 
+-  //권한 제거
+= //새로 권한 지정
+
+
+예)
+chmod  ugo+rx  my.txt (---> chmod  a+rx  my.txt 와 동일하다.)
+chmod  755  my.exe  
+
+
+☞소유자 변경 : chown(Change Owner)
+☞그룹   변경 : chgrp(Change Group)
+                 -R 옵션(디렉토리 일 때 하위 디렉토리 및 파일 모두 변경할 때 사용)
+
+
+///////////////////////////////////////////////////////////
+[신상품 보고서]
+
+
+       마케팅부 ---> 그룹
+       홍길동 ---> 사용자
+///////////////////////////////////////////////////////////
+
+
+
+<테스트>
+[cent]
+#cd  /work
+(디렉토리 이동이 안되면 #mkdir  /work 한 후 이동)
+#ls
+hello.exe
+//////////////////////////////////////////////////////
+hello.exe 파일이 없을 경우 아래와 같이 hello.exe 파일을
+만든 후 실습하기
+
+#vi  hello.c
+
+#include  <stdio.h>
+int  main()  {
+     printf("Linux  Test  \n");
+     return  0;
+}
+
+#gcc  -o  hello.exe  hello.c
+---> gcc  // hello.c 파일을 실행가능한 형태의 hello.exe 파일로 만드는 명령어
+---> gcc  -o  출력파일명  원본파일명
+---> gcc 가 없으면 #yum  -y  install gcc 로 설치
+
+//////////////////////////////////////////////////////
+
+
+#ll hello.exe
+-rwxr-xr-x  1 root root 4725 Aug  7 14:42 hello.exe
+  7  5  5
+퍼미션 : 하드링크수 : 소유자 : 그룹 : 크기(바이트) : (수정)날짜 : 파일명
+
+퍼미션 -rwxr-xr-x 에서
+첫번째 문자가 - 이면 일반파일이고 d 이면 디렉토리이다.
+나머지 문자는 3개씪 묶어서
+소유자(User, Owner), 그룹(Group), 다른계정들(Others) 의 퍼미션을 
+뜻한다.
+
+
+rwx=>4+2+1=>7
+r-x=>4+0+1=>5
+
+#chmod  u-x,g-x,o-rx  hello.exe
+u-x,g-x,o-rx 사이에 공백이 있으면 안 된다.
+
+u-x,g-x,o-rx 의 의미
+user   퍼미션에서 실행권한 x 제거
+group  퍼미션에서 실행권한 x 제거
+others 퍼미션에서 읽기 및 실행권한 rx 제거
+
+
+#ll hello.exe
+-rw-r-----  1 root root 4725 Jun  5 20:41 hello.exe
+
+
+#./hello.exe
+-bash: ./hello.exe: Permission denied
+
+원하지 않은 프로그램을 실행시킬수 있으므로 루트라 할지라도
+실행권한이 없으면 실행할 수 없다.
+
+#chmod  755  hello.exe
+user 개체에 7, group 개체에 5, others 개체에 5 퍼미션 할당
+
+#ll hello.exe
+-rwx r-x r-x  1 root root 4725 Jun  5 20:41 hello.exe
+  7   5   5 
+
+r  ---> 4
+w ---> 2
+x  ---> 1
+
+7 = 4(r) + 2(w) + 1(x)
+5 = 4(r) + 1(x)
+3 = 2(w) + 1(x)
+
+-rwxr-xr-x 에서 첫번째 글자가 d 이면 디렉토리, - 이면 파일,
+l 이면 링크파일(다른 파일과 연결되어 있다는 의미), b 는 
+블록장치, c 는 캐릭터 장치를 뜻한다.
+
+#chmod  a-x  hello.exe
+#ll  hello.exe
+-rw- r-- r--  1 root root 4725 Jun  5 20:41 hello.exe
+  6   4   4
+
+#chmod ugo=rx hello.exe
+#ll hello.exe
+-r-xr-xr-x  1 root root 0  2월 12 01:26 hello.exe
+
+
+#chown  nobody  hello.exe
+파일의 소유자 변경
+#ll hello.exe
+-rw-r--r--  1 nobody root 4725 Jun  5 20:41 hello.exe
+
+#chown  nobody111  hello.exe
+chown: `nobody111': 잘못된 사용자
+#
+---> chown, chgrp  명령어 다음에는 
+/etc/passwd, /etc/group 에 등록되어 있는 사용자, 그룹이름을 적어야 한다.
+
+/etc/passwd : 리눅스 사용자가 등록되어 있는 파일
+/etc/group  : 리눅스 그룹이 등록되어 있는 파일
+/etc/shadow : 리눅스 사용자의 패스워드(암호)가 있는 파일
+
+#chgrp  sys  hello.exe
+파일의 그룹 변경
+#ll  hello.exe
+-rw-r--r--  1 nobody sys 4725 Jun  5 20:41 hello.exe
+#
+
+nobody 와 sys, adm 은 리눅스 설치시 자동으로 등록되는 
+시스템 계정(사용자)과 시스템 그룹이다.
+
+#chown  root.adm  hello.exe
+또는 #chown  root:adm  hello.exe 
+소유자와 그룹 동시에 변경
+
+#ll hello.exe
+-rw-r--r--  1 root adm 4725 Jun  5 20:41 hello.exe
+#
+
+
+▣실습
+1. 아래와 같이 사용자, 그룹 추가 및 폴더(디렉토리) 생성 및 권한 설정
+(그룹 먼저 생성후 사용자 추가)
+2. myuser1 과 myuser2 는 보조그룹(-G 옵션)을 mybusiness 그룹으로 설정
+3. myuser3 과 myuser4 는 보조그룹을 mytech 로 설정
+4. Putty 이용하여 myuser1, myuser3 으로 로그인 한 후
+/Data1, /Data2 폴더 이동 테스트
+
+사용자 : myuser1   myuser2   myuser3   myuser4
+암호 : 계정 모두 1234 로 설정
+그룹 : mybusiness  mytech
+
+/Data1 :   영업부 전용 폴더
+drwxrwx---  root   mybusiness
+
+/Data2 :  기술부 전용 폴더
+drwxrwx---  root   mytech
+
+/////////////////////////////////////////////////////////////////////
+
+#groupadd  mybusiness
+#groupadd  mytech
+
+#adduser  myuser1
+#adduser  myuser2
+#usermod  -G  mybusiness  myuser1
+#usermod  -G  mybusiness  myuser2
+
+#adduser  -G  mytech  myuser3
+#adduser  -G  mytech  myuser4  
+
+#id  myuser1
+#id  myuser2
+#id  myuser3
+#id  myuser4
+
+
+#passwd  myuser1
+1234
+1234
+
+myuser2   myuser3   myuser4  동일하게 암호 설정
+
+#mkdir  /Data1  /Data2
+#ls  /
+#ls  -ld  /Data1  /Data2
+#chmod  770  /Data1  /Data2
+#chgrp  mybusiness  /Data1
+#chgrp  mytech  /Data2
+
+#ls  -ld  /Data1  /Data2
+
+/////////////////////////////////////////////////////////////////////
+
+
+▣리부팅 및 종료
+리부팅 : reboot,  init 6, shutdown  -r  now(시간)
+종료   : halt, init 0, poweroff, shutdown  -h  now(시간)
+
+
+
+☞reboot 와 shutdown 그리고 init 6 의 차이
+reboot   --->   shutdown   --->  init
+(reboot 는 shutdown 을 호출하고 shutdown 은 init 을 호출한다.)
+
+/////////////////////////////////////////////////////////////////////
+#man   reboot
+DESCRIPTION
+       Halt 명령은 /var/log/wtmp 파일에 시스템 종료 기록을 남기고, 시스템 종료
+       나 리부팅 작업을 한다.  만약 runlevel이 0이나 6이 아닌 상태의 시스템 에
+       서  halt 나 reboot 명령이 사용되면, shutdown(8) 명령이호출된다.(-h나 -r
+       옵션 기능을 함)
+
+
+#man  shutdown
+       Shutdown은 init 프로세서의 시그날 처리에 의해서 수행되며,
+       runlevel 바꾸기를 요청한다
+/////////////////////////////////////////////////////////////////////
+

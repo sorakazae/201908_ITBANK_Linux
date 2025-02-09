@@ -1,0 +1,149 @@
+터미널에서 시스템 종료 명령 입력
+바로종료
+shutdown -h now, halt, init 0
+shutdown -h +10 10분 후에 종료(h: halt)
+shutdown -r 22:00 오후 10시에 재가동(r : reboot)
+shutdown -c 진행중인 shutdown 을 취소(c :Cancel)
+shutdown -k now 현재 접속된 사용자에게 종료 된다는 메시지만 보내고 실제로는 종료 하지는 않음
+shutdown -r now -> 바로 리부팅..
+-----------------------------------------------
+init 명령어와 런레벨 리눅스 시스템이 가동되는 방법을  7가지로 나눈다. 이를 런레벨(Runlevel)이라고 부른다. 리눅스의 런레벨을 살펴본다
+0-종료모드 -> 시스템을 종료하라..
+1- 단일 사용자 모드(시스템 복구시에 사용)
+2- 사용안함
+3- 다중사용자 모드(텍스트 로그인)
+4- 사용안함
+5- 다중사용자 모드(X 윈도우 로그인)
+6- 재가동 모드(재부팅)
+
+컴퓨터가 부팅될 때의 런레벨은 /etc/inittab 파일에 정의 되어 있다..
+
+gedit /etc/inittab
+vi /etc/inittab
+i -> 편집모드
+esc
+:wq
+reboot
+
+시스템 재가동
+
+
+로그아웃
+logout, exit
+
+가상콘솔 
+vmware ->peference -> hotkey ctrl + alt + shift 변경 후 사용
+
+가상콘솔이란 출력 장치를 의미하는 경우에는 가상의 모니터라 생각하면 된다.
+
+모니터 7개가 달려 있는 효과를 낼 수 있다는 의미다.
+
+페도라 서버를 부팅 하명 x 윈도우 자동으로 7번째
+1-6번 모니터는 텍스는 모드로 제공된다.
+gedit /etc/inittab
+각각의 가상 콘솔로 이동하는 단축키는 ctrl + alt + F1-F7 
+ctrl + alt + f1을 누른다
+다시 X 윈도우로 화면으로 돌아오려면 ctrl + alt + f7을 눌러서 7번 모니터로 변경하면 된다. 
+
+가상콘솔의 해당하는 부분은 정의된 파일은 /etc/inittab에 정의 되어 있다.
+
+/sbin/mingetty라는 프로그램이 각각의 가상 콘솔에 "login:" 프롬프트를 뜨게 하는 역활을 한다
+
+
+여러명이 사용자가 접속해 있을 떄 시스템이 어떻게 종료되는지 확인해 보자
+
+1. 사용자 계정 생성
+ adduser test1
+passwd test1
+exit
+F1 누른 상태 에서 ctrl + alt 눌러야 가상 터미널 모드로 적용
+2. ctrl + alt + F1 을 누른다
+첫 번째 가상 콘솔에서 test1로 로그인한다,
+
+3. ctrl + alt + f7을 눌러서 x윈도우로 돌아와서 "shutdown -h +5" 명령을 입력후 ctrl + alt + f1을 눌러서 사용자에게 어떤 메제시가 오는지 확인한다.
+
+5분후에 시스템이 종료 된다는 메세지가 나온다.
+
+4. 다시 ctrl + alt + f7 을 눌러서 X 윈도우로 돌아와서  터미널 "shotdown -c" 셧다운 취소.
+
+
+5. shutdown -k now 명령 입력 메세지 확인
+root사용자의 경우 진짜 셧다운되는 것과 같은 메제시가 보인 후 바로 취소되었다는 메세지가 나온다. 
+ctrl + alt +f1을 눌러서 test1 사용자의 메세지 확인
+셧다운 메세지가 나오지만 실제는 셧다운 되지는 않는다.
+이 명령어는 관리자가 현재 접속한 사용자를 모두 로그아웃하도록 유도할 때 사용할 수 있다.
+
+
+* 에디터의 사용
+1.터미널 -> gedit
+2. shift + space -> 한/영키 전환
+한국어가 깨져 보일 수 있으므로 " 한국어 (EUC-KR)"를 선택해서 저장하도록 한다.
+
+3. 터미널 ->vi 입력
+
+vi 종료하려면 방법 중 먼저 ESC 키를 누른 후 ":q"는 그대로 종료, ":q!"는 변경된 내용을 무시하고 종료, ":wq" 변경된 내용을 저장하고 종료한다는 의미
+
+4. 터미널 ->vi new.txt 새로운 파일 생성
+그 상태에서 i 또는 a 키를 누르면 편집 창에 글자를 입력할 수 있게 된다.->명령 모드
+글을 쓸 수 있는 모드를 입력모드라 한다. 다시 글을 다 입력했다면 ESC키를 누르면 명령모드로 다시 돌아온다.
+ESC->":wq"를 입력하면 저장하고(Write) 종료(Quit)
+:콜론을 라인편집 모드라 한다.
+
+* vi 에디터가 비정상적으로 종료 되었을 때 생기는 파일을 확인하고 조치하는 방법
+1. vi install.log 파일 열기
+2. 다시 터미널을 열어서 vi install.log을 실행하면  비정상 종료되어 있음이 나타난다(따라서 파일이 열리지 않는다.)
+ESC를 누르고 :q!을 입력해서 종료한다.
+3. 비정상 종료된 파일의 스왑(swap)파일명은 "."+파일명+".swp"다  그러므로 install.log 파일은 .install.log.swp이다 
+ls -a 명령 확인
+ls -l
+rm .install.log.swp 파일 삭제
+rm test.txt
+rm -rf 파일명 강제 삭제
+*man 사용법
+man ls
+아래쪽 20행과 위쪽 행을 이동하려면 j/k를 사용하면 되며, 페이지 단위로 이동하려면 Page Down / Page Up 또는 Space /B 를 사용하면 된다.
+특정 단어를 검색하고 싶다면 "/단어"를 입력하면 해당 단어들이 찾아지고 N키를 누르면 다음 단어로 계속 넘어간다.
+
+*마운트와 cd-rom/RW/DVD의 활용
+ 리눅스에서는 하드 디스크의 파티션, CD-ROM, 플로피 드리이브 등을 사용하려면 특정한 위치를 연결해 줘야 한다. 이렇게 물리적 특정한 위치에 연결 시켜 주는 과정을 마운트라고 한다
+ls /media/cdrom
+실습
+x윈도우 환경에서는 CD-ROM을 삽입하면 자동으로 마운트되도록 설정되어 있다. 이 설정이 오히려 더 귀찮다. CD-ROM이 자동으로 마운트되는 기능을 확인해 보고 , OFF 하자
+1. umount /dev/cdrom
+2. mount 연걸 장치를 볼 수 있다.
+cd-rom 헤제 후 cd-rom을 다시 한번 연결한다.
+3. mount -> 마지막에 /dev/hdc on /media/cdrom 타입이 생성 확인
+4. ls /media/cdrom -> 내용 확인
+5. 터미널 : cd-rom 마운트 해제 "gnome-vloume-properties"를 입력 -> 이동식 드라이브 및 미디어 등록정보 마운트를 모두 해제 한다.
+6. mount -t auto /dev/hdc /media/cdrom
+mount -t <파일시스템 타입> <장치파일> <마운트포인트>
+df -T 디스크 사용량 확인
+7. cd /media/cdrom/Fedora/RPMS
+cd /media/cdrom
+cd ~ Root 디렉토리
+pwd -> 현재 디렉토리 위치 확인
+umount /media/cdrom/ 마운트 해제..
+현재 디렉토리가 cd-rom 내부기 때문에 cd-rom사용중 이므로 해제 불가능
+cd /media/ 디렉토리 이동 후
+umount /media/cdrom/ 
+dt -T	각 장치 용량 확인
+
+* 리눅스에서 ISO 파일을 생성하고 사용해 보자
+-rpm -qa <패키지명> 해당 패키지기 설치 되었는지 확인 하는 명령
+1. ISO 파일을 생성하는 명령어 mkiosfs. iso 파일을 cd로 굽는 명령어는 cdrecord 이다 또한 dvd로 레코딩을 하는 명령어는 growisofs다 
+rpm -qa mkisofs
+rpm -qa cdrecord
+growisofs 명령어는 rpm -qa dvd+rw-tools 패키지에 들어 있다
+ls -a /boot
+2. /boot 디렉토리를 iso 파일로 만들어 보자
+mkisofs -r -J -input-charset UTF-8 -o /root/test.iso /boot
+
+3. 생성된 test.iso 파일을 cd-rom으로 마운트해서 사용해 보자
+mount -o loop /root/test.iso /media/cdrom/ ->연결
+ls /media/cdrom
+
+ls /boot/
+4. 확인 후 
+umount /media/cdrom 또는 umount/root/test.iso로 마운를 해제 한다.
+
+

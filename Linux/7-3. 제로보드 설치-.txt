@@ -1,0 +1,166 @@
+
+
+@@ 제로보드 설치
+
+
+! 관련 패키지 설치
+
+
+
+# yum -y install mysql-server          -> mysql 설치
+
+# yum -y install httpd  httpd-devel httpd-manual -> 웹서버설치
+
+# yum -y install php php-mysql
+-> mysql과 연동해야 할 경우 절대적으로 필요한 패키지
+-> php-mysql 패키지 설치되지 않으면 클라이언트 웹브라우저에서
+   mysql_connect() 함수 호출시 다음의 에러발생하게 됨.
+   'Fatal error: Call to undefined function mysql_connect()'
+               
+# yum -y install gd gd-devel php-gd
+-> 이미지 변환 기능을 위한 gd 및 gd 라이브러리 설치.
+   설치하지 않으면 xe 설정과정중 에러 발생됨.
+
+# yum -y install vsftpd
+-> zeroboard module 설치에 필요한 ftp 서버 설치.
+
+# service httpd restart                -> DB/ftp/web 서버 활성화.
+
+
+
+! 제로보드 설치 순서
+
+1) 먼저 mysql에서 제로보드에 이용할 DB 생성
+
+# mysql -uroot -p
+mysql> create database zeroboard;
+mysql> grant select,insert,update,delete,create,drop 
+    -> on zeroboard.* to admin@'localhost' identified by 'user123';
+
+mysql> flush privileges;
+mysql> exit
+
+2) 소프트웨어 다운로드
+
+-> pressEngine의 설치부터 운영에 필요한 가장 중요한 내용이 있는
+   Core 배포판을 다운로드 및 설치해야 함. 즉 XpressEngine의 모든
+   프로그램/스킨등은 XpressEngine Core가 있어야 함.
+
+# cd /var/www/html -> 제로보드 설치 위치로 이동
+
+# wget http://download.xpressengine.com/download/18325662/22754142
+-> 제로보드 프로그램 다운로드
+
+# mv 22754142 xe.zip
+
+# unzip xe.zip              -> 압축해제
+
+# chmod 707 xe              -> 접근권한 모드 수정.
+
+
+3) 클라이언트에서 서버로 접속 후 환경 설정
+
+http://www.naver.com/xe/
+
+한국어 선택 후 다음 -> 
+
+설치조건확인: '설치를 진행합니다' -> 
+
+DB선택: Mysql 선택 후 ->
+
+DB정보 입력 : 사용자: admin, 비밀번호: user123, DB: zeroboard 입력 후 ->
+
+환경 설정 : GMT +9:00 확인 후  ->
+
+관리자 정보 입력 후 완료 ->
+   이메일 주소 : dsinfo77@naver.com
+   새 비밀번호: user123
+   새 비밀번호확인: user123
+   닉네임: dsinfo77
+   아이디: dsinfo77
+
+
+4) xe 설정
+ 
+-> 웹컴페이지의 관리자페이지로 들어가서 설정 텝에 있는 것들을 설정.
+ 
+-> 일반 텝에 있는 사이트에 접속시 기본으로 호출될 모듈을 지정해야 함.
+   디폴트로 welcome_page가 잡혀있는데 이것은 문서 모듈로서 윗젯이
+   설치  되지 않음. 첫페이지에 위젯을 넣고 싶다면 이곳을 수정해야 함.
+ 
+5) 쉬운설치를 통한 모듈설치
+
+-> 모듈이란 페이지 하나 하나를 모듈로 보면 됨.
+-> 쉬운 설치를 통해 마음에 드는 레이아웃을 설치.
+-> 두번째로 게시판 설치 
+-> 세번쨰로 위젯을 설치
+-> 쉬운설치 보면 프로그램과 스킨 프로그램은 말그대로 프로그램으로
+   모듈을 의미 하고 스킨은 설치된 모듈을 꾸미는 것임.
+   http://doc.xpressengine.com/manual/XE-User_Manual-ko(v2.0).pdf ; 메뉴얼 참조.
+
+6) ftp 설정  : root 계정으로 설정하여 저장
+
+-> 쉬운 설치 중 ftp 문제가 발생되면 웹상에서 직접 다운로드하여
+-> 해당 디렉토리에 위치시키면 됨. 게시판의 경우 board.tar를
+-> 다운로드 받아 modules/board로 이동하여 설치.
+ 
+7) 설치된 모듈설정
+ 
+-> 확장기능 텝에 보면 설치된 레이아웃 들어가면 설치했던 레이아웃이
+   보이게 됨. 설정을 통해 모든 레이아웃 메뉴 조정.
+-> 그다음은 게시판설치. 설치된 모듈을 보면 게시판이 있음.
+   게시판 페이지 수만큼 게시판을 등록 (개별적으로 하나하나)
+   페이를 만들어 주면 됨. 즉 위젯이면 위젯 게시판이면 게시판
+   문서면 문서대로. 
+ 
+8) 메뉴 만들기
+ 
+-> 실제로 사용되어질 메뉴 생성.
+-> 사이트맵 에서 메뉴를 추가.
+-> 메뉴마다 사용목적에 맞게 모듈을 연결 해야 함.
+-> 위젯 페이지면 위젯 모듈을 게시판이면 게시판 모듈을 선택.
+ 
+ 
+9) 위젯
+ 
+-> 위젯은 최근글을 출력 해주거나 이미지를 보여준다거나 하는 모듈임.
+-> 위젯을 사용하려면 일단 페이지가 위젯 페이지로 설정 되어 있어야 함.
+-> 초기 위젯 페이지를 보면 페이지 수정으로 들어가면 위젯을
+   추가하는 텝들이 있음. 이곳을 통해 적절히 꾸며주고 스킨등을
+   적용 할 수 있음.
+
+
+
+
+! Trouble shoutting
+
+
+[문제 1]
+404 Not Fount: The requested URL  /xe/admin was not found on this server.
+[해결]
+1. apache 설정파일인 httpd.conf에서 mod_rewrite.so 모듈이 LoadModule 에 추가되어있는지 확인
+LoadModule  rewrite_module  modules/mod_rewrite.so
+
+2. apache 설정파일인 httpd.conf에서 'AllowOverride None'을 All로 변경
+# vi /etc/httpd/conf/httpd.conf
+DocumentRoot "/var/www/html"
+<Directory "/var/www/html">
+  Options FollowSymLinks
+  AllowOverride All
+  Order allow,deny
+  Allow from all
+</Directory>
+~
+~
+:wq
+
+[문제 2]
+메지시 1: Err : '' template file does not exists.
+
+[해결]
+php 설정파일인 php.ini에서 'safe_mode On'을 Off로 변경
+# vi /etc/php.ini
+safe_mode Off
+~
+~
+:wq

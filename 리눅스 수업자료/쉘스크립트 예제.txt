@@ -1,0 +1,68 @@
+성적 처리
+#!/bin/sh
+
+echo "이름 :"
+read name
+
+echo "국어점수"
+read kor
+echo "영어점수"
+read eng
+echo "수학점수"
+read mat
+
+tot=`expr $kor + $eng + $mat`
+avg=`expr $tot / 3`
+
+if [ $avg -ge 60 ]
+then
+grade="합격"
+else
+grade="불합격"
+fi
+avg2=`expr $avg / 10`
+
+case $avg2 in
+        10 | 9)
+        grade2="A학점" ;;
+        8)
+        grade2="B학점" ;;
+        7)
+        grade2="C학점" ;;
+        6)
+        grade2="D학점" ;;
+        *)
+        grade2="F학점" ;;
+esac
+
+echo "이름 " $name
+echo "평균 " $avg
+echo "합격여부 " $grade
+echo "학점 " $grade2
+exit 0
+
+while 문을 이용한 아이디와 암호 체크 에제
+!/bin/sh
+
+cnt=0
+while [ $cnt = 0  ]
+do
+        echo 아이디 입력
+        read id
+        echo 암호 입력
+        read pwd
+
+
+        if [ $id = "root" ] && [ $pwd = "1234" ]
+        then
+        echo "통과"
+        cnt=1
+        else
+        echo 아이디와 암호 안맞음
+        cnt=0
+        fi
+done
+exit 0
+
+
+

@@ -1,0 +1,349 @@
+system-config-packeges
+RPM의 개념과 활용
+RPM(Redhat Package Manager)
+레드햇에서 원도우즈의 setup.exe와 비슷하게 프로그램을 설치 한 후에 바로 실행할 수 있는 설치 파일을  제작하게 되었다. 이러한 설치 파일의 확장명은 *.rpm이며, 이를 '패키지(Package)' 라고 부른다.
+<패키지이름>-<버전>-<릴리즈번호>.<아키텍처>.rpm
+예)firefox-1.0.4-4.i386.rpm
+
+패키지 이름 : firebox 프로그램의 이름
+버전 : 1.0.4 대개 3자리 수로 구성되며, 높을 수록 최신 버전
+릴리즈 번호 : 4 문제점을 개선할 때 마다 붙이는 번호
+아키텍처 : i386 CPU 즉, 이 파일이 설치 가능한 CPU를 의미
+
+자주 사용하는 rpm의 사용법
+설치
+rpm -ivh <패키지 파일 > ->
+rpm -Uvh <패키지 파일>
+
+U : 기존에 패키지가 설치 되지 않았다면 i와 같이 일반 설치를 하고, 기존에 패키지가 설치되어 있다면 업그레이드 한다.
+
+v: 설치 과정을 확인
+h: 설치과정을 # 마크로 화면에 출력함
+
+삭제
+rpm -e <패키지 파일> : 여기서 e는 Erase의 약어
+
+패키지 질의
+rpm -qa <패키지 이름>: 시스템에 패키지가 설치 되었는지 확인
+
+rpm -qf<파일의 절대 경로>:  이미 설치된 파일이 어느 패키지에 포함된 것인지 확인
+
+rpm -ql <패키지 이름>: 특정 패키지에 어떤 파일들이 포함되었는지 확인
+
+rpm -qi <패키지 이름> : 설치된 패키지의 상세 정보
+mount /dev/sr0 /media
+
+RPM의 단점
+GUI 환경을 지원하지 못할 수도 있다
+rpm -qa ftp
+rpm 패키지를 이용한 프로그램을 설치해 보자
+1. 페도라 서버에 4번 iso 파일 삽입
+2. 
+- mount /dev/hdc /media/cdrom
+-cd RPMS 디렉토리로 이동해서 mc-4.6.1a-0.9.i386.rpm  파일을 설치 한다.
+
+cd /media/cdrom/CentOS/RPMS/
+ls -a | more
+pwd
+ls mc*
+rpm -Uvh mc-4.6.1a-0.9.i386.rpm 설치
+rpm -qi 설치된 프로그램의 정보 확인
+rpm -e mc-tab 으로 자동완성 기능을 사용해서 패키지를 제거한다. 
+그런데 틀림없이 패키지를 설치했는데도, 그런 패키지가 설치되어 있지 않다는 메세지가 나온다.우리가 설치한 패키지의 이름은 "mc" 패키지이며 mc-4.6------은 패키지의 이름이 아니라 설치 파일명이다 그래서 rpm -e mc 로 제거해야 한다. 무턱대고 자동완성 기능을 사용하다가 자주 하는 실수이므로 잘 기억해 두고록 하자.
+
+
+3. 의존성 문제가 있는 rpm 파일을 설치해 보자..
+
+cd
+mount /dev/cdrom /media/cdrom
+
+ls dovecot* -> 3번 시디...
+rpm -Uvh dove...
+
+의존성의 문제가 있어서 설치의 오류가 발생한다.
+
+rpm -qa | grep dove ->dove 단어가 들어간 모든 패키지 찾기
+* YUM
+RPM이 분명 유용하지만 의존성 문제로 불편한 점이 있다. 이를 해결 하기 위해서는 제공하는 것이 YUM(Yellowdog Update Modified)이다. YUM은 RPM과 별도의 것이라기 보다는 RPM 패키지를 설치하는 편리한 툴이라고 생각하면 된다.
+
+yum 명령은 rpm 명령의 패키지 의존성 문제를 완전하게 해결해 준다. 즉 특정 패키지를 설치하려고 할 때, 의존성이 있는 다른 패키지를 자동으로 먼저 설치해 주는 인공 지능적인 툴이다.
+ping www.yahoo.co.kr
+yum install <패키지 이름>
+yum -y install dove*
+"yum -y install <패키지 이름> -y 옵션을 써주면 묻는 부분에서 무조건 yes를 입력한 것으로 간주하고 자동으로 넘어감
+
+
+passive mode 체크
+
+
+업데이트 가능한 목록 보기
+yum check-update
+
+시스템에 설치된 패키지 중에서 업데이트가 가능한 패키지의 목록을 출력한다.
+
+업데이트 
+yum update <패키지이름>
+삭제
+yum remove <패키지 이름>
+로컬에서 설치
+yum localinstall <패키지이름> : 현재 디렉토리에 있는 rpm 파일을 설치
+
+1. mysql 패키지를 설치하자.
+1-1 yum info mysql  설치할 패키지의 정보를 확인해 보자
+1-2 yum install mysql 명령을 입력한다. 인터네상에서 의존성 있는 목록을 확인해서 몇 개를 설치해야 하는지 확인해 준다. 이 mysql 경우에는 mysql과 mysql-libs 두 개 패키지를 설치해야 메제지가 나왔다 .또한 다운로드해야 할 총 크기까지 나타내 준다
+1-3 여기서 "y"를 입력하면 해당 패키지를 다운로드 하여 자동으로 설치해 준다
+
+2. 그런데 확실한 패키지를 설치할 것이라면 y 를 눌러 주는 것도 생략하는 것이 훨씬 편리하다.
+2-1. 이번에는 dovecot 이라는 패키지를 설치하자.(이 패키지는 추루 메일 서버 구축에도 사용된다.) yum -y dovecot으로 설치해 보자
+2-2 설치가 끝날때 까지 아무것도 묻지 않고 설치를 완료할 것이다. 
+3. yum  remove dovecot을 입력하면 된다.
+
+yum -install apach*
+
+파일의 압축과 파일 묶기
+
+파일 압축 
+리눅스에서 가장 많이 보게 되는 압축 파일은 gz(또는 Z) 거나 bz2이다 . 이 파일들을 관리 하는 방법
+
+gzip 확장명을 gz으로 압축을 하거나 풀어줌
+gzip <파일명> : " 파일명"을 압축 파일인 "<파일명>.gz"으로 만듬
+gzip  -d "<파일명>.gz"
+:"<파일명>.gz" 압축 파일을 일반 파일인 "<파일명>"으로 만들어줌 (d는 Decompress 의 의미)
+
+gunzip 확장명 gz의 압축을 풀어줌
+gzip -d 와 동일한 명령어
+
+bzip2 확장명을 bz2 로 압축을 하거나 풀어줌
+bzip2  파일명 : "파일명"을 압축 파일인 "파일명.bz2"으로 만들어줌
+
+bzip2 -d "파일명.bz2" : "파일명.bz2" 압축 파일을 일반 파일인 "파일명"으로 만들어줌
+
+bunzip2 : 확장명 bz2의 압축을 풀어줌
+bzip2 -d와 동일한 명령어
+
+파일 묶기
+tar -확장명을 tar로 묶음 파일을 만들어 주거나 묶음을 풀어줌
+[동작] 
+c(새로운 묶음)
+x(묶인 파일을 풀어줌)
+t(묶음을 풀기 전에 묶인 경로를 보여줌)
+
+[옵션]
+f(필수) -묶음 파일명 지정, 원래tar는 tape 장치 백업이 기본
+v -visual 파일이 묶이거나 풀리는 과정을 보여줌
+z -tar + gzip(GNU only)
+j -tar + bzip(GNU only)
+
+[사용 예]
+tar cvf xinetd.tar /etc/xinetd.d/ : 생성
+tar cvfz xinetd.tar.gz /etc/xinetd.d/ : 생성 + gzip 압축
+tar cvfj xinetd.tar.bz2 /etc/xinetd.d/ : 생성 + bzip2압축
+tar tvf xinetd.tar  : 확인
+tar xvf xinetd.tar : 풀기
+tar xvfz xinetd.tar.gz : gzip 압축 해제 + tar 풀기
+tar xvfj xinetd.tar.bz2 : bzip2 압축 해제 + tar 풀기
+
+tar xvfz <파일명.tar.gz>" 와 tar xvfj <파일명.tar.bz2>" 정도 최소한 이 두 명령은 기억 하자..
+
+service network restart
+
+
+파일 위치 검색
+
+find[경로][옵션][조건][action]
+옵션 -name, -user(소유자), -newer(전, 후), -perm(허가권), -size
+[사용 예]
+find  /etc -name *.conf | more
+/etc 디렉토리 하위에 확자명이 "*.conf"인 파일 검색
+find / -name ftp* | more
+find  /home -user centos-> /home 디렉토리 하위에 소유자가 "centos"인 파일 검색
+find ~ -perm 644
+현재 사용자의 홈 디렉토리 하위에 허가권이 644인 파일 검색
+find /bin -size +10k -size -100k 
+/bin 디렉토리 하위에  파일 크기가  10kb~100kb인 파일 검색
+
+연습문제 
+
+1. 사용자 계정 : centos 암호 : 1111
+2. /home/centos 
+3. 콘솔창 1번 로그인 해서 centos 사용자의 홈디렉토리 하위디렉토리 : temp 생성 
+4. /bin 모든 파일을 /home/centos/temp 디렉토리로 복사
+cp /bin/* temp
+5. /home/centos 에서 -> /bin -> tar.gz 파일로 적용
+->bin.tar.gz  압축해제;
+6. touch 1.txt 2.txt 생성 후
+7. 콘솔창 7번 이동해서 find 이용해서 소유자가 centos 파일 찾아서 centos.txt 파일로 저장 후 cat 명령으로 확인 하시오...
+8.centos 사용자와 홈디렉토리 한 번에 삭제
+
+ 
+cron 과 at
+주기적으로 반복되는 일을 자동적으로 실행 될 수 있도록 설정해 놓은 것을 cron 이라고 한다. 만약 회사에서  시스템의 사용이 가장 적은 새벽 5시에 백업을 받아야  한다면 반복되는 작업을 처리 할 수 있다.
+
+관련된 데몬(서비스)은 crond이며, 관련 파일은 /etc/crontab이 있다.
+             /etc/crontab 파일
+                     |
+시간별				일별 			주별			월별
+/etc/cron.hourly	/etc/cron.daily/		/etc/cron.weekly/	/etc/cron.monthly/
+
+01 *  *  *  * root run-parts /etc/cron.hourly
+02 4  *  *  * root run-parts /etc/cron.daily
+03 *  *  *  0 root run-parts /etc/cron.weekly
+01 4  1  *  * root run-parts /etc/cron.monthly
+
+첫 행의 의미를 파악해 보자, 분, 시, 일, 월, 요일 , 권한 , 실행 명령순으로 되어 있다.
+01분 마다 모든 시에, 모든 일에, 모든 월에, 모든 요일에, root 권한으로, /etc/cron.hourly/ 디렉토리의 파일을 실행 이라고 해석할 수 있다.
+단 3번쨰 행에서 요일 부분에 써있는 0은 일요일을 의미한다. 0-6까지 일요일-토요일 의미하게 되는 것이다.
+
+♣ at
+
+cron은 주기적으로 반복되는 작업을 예약하는 것이지만, at은 일회성 작업을 예약하는 것이다,
+즉, at은 예약을 해 놓으면 한 번만 실행되고 소멸되는 것이다.
+
+예약 : #at < 시간>
+# at 3:00am tomorrow 내일 새벽 3시
+# at 11:00pm January 30  1월30일 오후 11시
+# at now + 1 hours 1시간 후
+
+at> 프롬프트 예약 명령어 입력 후
+완료되면 CTRL + D
+확인 : #at -l
+취소 : #atrm <작업번호>
+
+실습문제
+매월 15일 새벽 3시 1분에 /home 디렉토리와 그 하위 디렉토리를 /backup 디렉토리에 백업하도록 하자
+1. service crond restart
+2. gedit /etc/crontab으로 예약파일 열고, 매월 수행하는 부분을 열어서 아래와 같이 수정
+01 3 15 * * root run-parts /etc/cron.monthly
+
+3. /etc/cron.monthly/ 디렉토리에 메세지를 출력하는 스크립트 파일을 만들고, 속성을 실행 가능 하도록 바꿔준다.
+
+cd /etc/cron.monthly/
+#touch myBackup.sh
+chmod 755 myBackup.sh
+ls -l
+
+4. myBackup.sh의 내용을 아래와 같이 입력한다.
+아래의 내용은 현재 날짜를 추출해서 /backup 디렉토리에 "backup-<현재날짜>.tar.gz"으로 /home 디렉토리 전체의 백업을 생성 하라는 의미다,
+gedit myBackup.sh
+#! /bin/sh
+
+set $(date)
+fname="backup-$2$3.tar.bz2"
+
+tar cfj /backup/$fname	/home
+
+5.  백업을 디렉토리를 생성해 주고. crond 데몬을 재시작한다.
+mkdir /backup
+service crond restart
+6. 날짜를 강제로 바꿔주고 테스트해 보도록 하자.
+"date" 명령으로 "01월15일03시00분2015년"(011503002015)으로 날짜를 강제적으로 바꿔주고, crond 서비스를 재시작한다. 1분 정도 기다린 후에 설정된 내용이 잘 실행 되었는지 확인해 보자
+또, 2월로 시간을 바꾸고 다시 실행을 한다. 계속 백업된 데이터가 쌓이는 것을 확인 할 수 있다.
+
+date 011503002015
+service crond restart
+date
+ls -l /backup/
+date 021503002015
+service crond restart
+date
+ls -l /backup/
+
+7. 내일 새벽  4시에 시스템을 최신 패키지로 업데이트 하고, 완료되면 시스템을 재부팅 하는 것을 at으로 예약한다.
+rdate -s time.bora.net # 시간을 설정
+->time.bora.net 사이트의 시간과 동기화...
+at 4:00 am tomorrow
+at>yum -y update
+at>reboot
+at><EOT><-ctrl + d 종료
+at -l
+
+at now + 2 minutes
+at> mkdir /tellme
+ctrl + d  -> 백그라운드에서 실행
+at - l  실행중인 at 실행 프로세스 번호 출력
+
+
+네트워크 관련 설정 및 명령어
+-게이트웨이(gateway), 라우터(router)
+명령어 형식
+# route add default gw <게이트웨이 주소> dev <장치이름>
+예 : 게이트웨이가 192.168.100.254로 변경되었을 때는 다음 명령
+route add default gw 192.168.100.254 dev eth0
+service network restart 
+ifconfig eth0
+게이트웨이 주소 확인 : netstat -rn
+#DNS 서버
+설정 파일 /etc/resolv.conf 내용 중에 "nameserver <DNS 서버 IP>"로 설정 되어 있다.
+#네트워크 장치 이름
+gedit /etc/resolv.conf
+eth0, eth1
+
+★ 중요한 네트워크 관련 명령어
+
+system-config-network
+system-config-network-tui->텍스트 기반에서 작동
+service network restart 
+네트워크 설정 변경한 후에, 변경된 내용을 시스템에 적용하는 명령이다. 그러므로 system-config-network 명령 후에는 꼭 "service network restart" 명령을 수행한다고 생각하면 된다.
+system-config-services(서비스)=ntsysv(텍스트 모드)
+system-config-securitylevel(방화벽)-> 신뢰할 수 있는 장치 : eth0 체크 확인
+service iptables status -> 방화벽
+service iptables restart
+service network restart
+
+
+ifconfig <장치이름>
+해당하는 장치의 ip 주소 설정 정보를 출력해 주는 명령이다.
+nslookup
+DNS 서버의 작동을 테스트하는 명령이다.
+>server
+192.168.100.2#53 ->DNS 포트 번호(TCP,UDP)
+>www.naver.com
+ping 
+해당 컴퓨터가 네트워크에서 응답하는지를 테스트하는 간편한 명령이다.
+
+네트워크 설정과 관련된 주요 파일
+system-config-network 명령을 수행하고 나서 변경되는 관련 파일들이다.
+1. /etc/sysconfig/network
+네트워크의 기본적인 정보가 설정 되어 있는 파일
+2. /etc/sysconfig/network-scripts/ifcfg-eth0
+eth0 장치에 설정된 네트워크 정보가 모두 들어 있는 파일
+
+3. /etc/resolv.conf
+DNS 서버 정보 및 호스트 이름이 들어 있는 파일.
+
+
+실습문제 
+네트워크 카드를 제거하고 , 새로 장착한 후에 정상적으로 네트워크가 될 수 있도록 설저해 보자
+1. VM->Snapshot->설치직후(셧다운) 선택
+2. 랜카드 제거
+3. Add 버튼을 클릭해서 이더넷 카드 장치 유형은 NAT 설정
+4. 부팅
+5. system-config-network->하드웨어 탭 ->네트워크 카드 삭제 ->새로만들기 ->Ethernet을 선택 ->네트워크 아답터 창에서 "AMD PCnet32"를 서택 -> 나머지는 디폴트 진행
+6. 장치 탭 -> 새로만들기 -> 이더넷에 연결 선택 -> AMD PCnet32(eth0)를 선택-> 네트워크 세팅창 정적으로 설정된 ip 주소풀 ip 주소 세팅 , dns 세팅 탭에서 세팅 -> 창 닫기 ->service network restart 명령 -> ping www.yahoo.co.kr 테스트 
+7. system-config-network 설정된 파일을 확인
+vi /etc/sysconfig/network 파일을 열어서 확인
+vi /etc/sysconfig/network-scripts/ifcfg-eth0 명령 확인
+dns 설정 파일은 vi /etc/resolv.conf로 열여서 확인
+8 네트워크 설정이 정상적으로 설정이 되었다. 이번에는 인터넷 안될 경우 DNS 서버 고장 때문인지 아니면 다른 문제 인지 확인
+1. www.empas.com 접속 
+2. DNS 문제 발생 시키자
+ gedit /etc/resolv.conf 열여서 192.168.100.6로 변경
+3. 다시 www.empas.com 연결 시도 인터넷 연결이 안된다. 인터넷이 되지 않는다면 dns 서버의 문제인지, ip설정이 잘못 되었는지인지를 바로 알기가 어렵다. 그 중에서 dns 서버가 원인을 발생 시켰는지 확인해 보자
+nslookup
+server
+Default Server : 192.168.0.2
+Address : 192.168.0.2#53 
+문제가 발생하면 DNS 정보를 수정하고 인터넷 연결을 다시 시도한다.
+
+(5)네트워크 보안을 위한 SELinux
+SELinux(Security Enhanced Linux)는 보안에 취약한 리눅스를 보호하기 위해 탄생하였다. SElinux는 시스템에서 보안에 영향을 미치는 서비스, 권한 등을 제어하도록 할 수 있다. 이를 위해서 강제(Enforcing), 허용(Permissive), 비활성(Disabled) 세 가지 레벨을 지원하며, 설정 파일은 /etc/sysconfig/selinux 파일이다..
+
+가장 강력한 강제(Enforcing)는 시스템 보안에 영향을 미치는 기능이 감지되면 아예 그 기능이 작동되지 않도록 시스템에서 막아준다. 허용(Permissive)은 시스템 보안에 영향을 미치는 기능이 감지되면 허용은 되지만 그 내용이 로그에 남게 되고 화면에도 출력된다. 비활성(Disabled)은 SELinux를 사용하지 않는 것이어서 당연이 보안에는 취약해 진다.
+
+
+
+
+
+
+
+

@@ -1,0 +1,393 @@
+
+[ITBANK Andylec  주말 리눅스 2 과정]
+
+▣오늘의 수업내용(1일차)
+수업 OT
+실습환경 구축
+리눅스 네트워크
+
+▣PC 로그인 
+-ITBANK 계정으로 로그인
+-402호 강의장은 Master(관리자) 계정은 막아 놓았음
+
+※인터넷 되는지 확인하기
+
+▣수강동의
+온라인 출석부 사이트(http://mgr.eduitbank.com)에 로그인 하셔서 
+수강동의 를 체크해 주시기 바랍니다.
+
+나의정보(오른쪽상단)-출석정보(왼쪽메뉴)-과목명 클릭-수강동의 확인버튼 클릭
+
+▣출석확인
+
+
+▣강사 게시판 
+http://car2100.ivyro.net/hs1
+사용자 : start
+암호 : unix
+
+▣수업 준비사항
+1. 윈도우 탐색기 실행
+2. 2_주말반 폴더 생성후 그 안에 "공용" 폴더 생성(폴더 있으면 생략)
+3. 2_주말반 폴더 안에 자신이 사용할 폴더 생성
+(폴더 이름은 자신의 이름으로 지정)
+
+예)
+D:\2_주말반
+D:\2_주말반\공용
+D:\2_주말반\홍길동
+
+
+
+▣자료 다운
+탐색기 실행 후 자신의 컴퓨터에서 아래 파일을 찾아보고 
+없으면 강의장 임시 서버에서 
+알FTP 이용하여 D:\주말반\공용 폴더에 다운받기
+(파일 있으면 다운 생략하고 그 파일을 자신의 폴더로 복사해서 사용하면 됨)
+
+XP_2013.alz
+Cent6.4.alz
+
+
+▣수업OT
+
+
+
+▣First 서버 준비
+1. vmware 설치 확인
+2. Cent6.4.alz 를 자신의 폴더에 압축풀기
+3. vmware 실행하기
+4. 리눅스 가상머신을 vmware 에서 불러와서 실행하기
+vmware 메뉴 표시줄-File-Open
+폴더 이동
+Cent6.4.vmx 선택 후 열기 버튼 누르기
+start 버튼(> 녹색 화살표 아이콘) 누르기
+copy, move 질문 나오면 "I copied it" 선택 후 ok 누르기
+5. 부팅후  
+사용자 : root
+암호 : andylec 
+입력하고 로그인 하기
+6. 터미널 실행하기
+바탕화면-마우스 오른쪽 버튼-터미널 열기 선택
+7. 해상도 변경 : gnome-display-properties
+
+
+▣가상머신 이름 변경하기
+vmware 메뉴표시줄-VM-Settings-Options 선택
+
+Virtual Maching Name : First_WeekendPM3
+
+
+▣인터넷을 하기 위한 네트워크 정보(4가지)
+1. 아이피 주소(IP Address)
+2. 서브넷 마스크(Subnet Mask)
+3. 게이트웨이(Gateway)
+4. DNS(Domain Name Server) 정보
+
+
+▣보안 설정 확인
+방화벽 설정 비활성화
+selinux 설정 비활성화
+
+#service  iptables  status
+#sestatus
+
+---> 비활성화 확인
+---> 리눅스 2 수업은 방화벽과 selinux 를 비활성화 시켜 놓은 상태에서 실습을 해야함
+
+/////////////////////////////////////////////////////////////////////
+방화벽 비활성화 설정 :
+lokkit  --disabled
+
+selinux 비활성화 설정 :
+/etc/sysconfig/selinux 파일에서
+SELINUX=disabled 설정 후 리부팅
+/////////////////////////////////////////////////////////////////////
+
+
+
+▣VMnet8 Switch 의 서브넷 확인
+VMWARE 메뉴-Edit-Virtual Network Editor
+
+Name                   Subnet Address  
+VMnet8                 192.168.x.0
+
+--->VMnet8 의 서브넷을 확인후 리눅스 네트워크 설정시 
+      동일한 서브넷으로 설정해야 함
+      
+
+▣랜카드 인터페이스명 설정
+#cd  /etc/udev/rules.d
+#vi  70-persistent-net.rules
+:set  nu
+8 번 라인 # 처리
+11 번 라인에서  eth1 을  eth0 으로 변경
+
+8 #SUBSYSTEM
+
+11                                   NAME="eth0"                       
+
+저장후 종료(esc  :wq)
+/////////////////////////////////////////////////////////////////////
+마지막 라인은 # 으로 시작하면 안 되고 그 위의 라인은 모두
+#으로 시작하게 설정
+마지막 라인의 NAME 을 eth0 으로 변경
+/////////////////////////////////////////////////////////////////////
+#reboot
+
+
+▣네트워크 설정 명령어
+
+setup
+system-config-network
+system-config-network-tui
+
+
+#system-config-network
+장치 설정 선택후 엔터 입력
+eth0 선택 후 엔터 입력
+
+이름 : eth0
+장치 : eth0
+DHCP 사용 : [ ] ---> 스페이스바를 눌러서 * 표 해제
+고정 IP :  192.168.x.10
+넷 마스크 : 255.255.255.0
+기본 게이트웨이 IP : 192.168.x.2
+첫번째 DNS 서버 : 192.168.x.2
+두번째 DNS 서버 : 168.126.63.1
+OK
+저장
+종료
+
+
+
+▣네트워크 시작/중지 스크립트
+
+/etc/init.d/network
+/etc/rc.d/init.d/network
+/etc/init.d/network   stop
+/etc/init.d/network   start
+/etc/init.d/network   restart
+
+
+#service  network  restart
+
+
+▣ifconfig
+아이피 확인
+(도스창에서는 ipconfig)
+
+#ifconfig
+
+/////////////////////////////////////////////////////////////////////
+네트워크 설정후 service network restart 로 적용한 다음
+ifconfig 로 보았을 때 아이피가 출력 안 되면
+아래와 같이 해 본다.
+
+#cd  /etc/sysconfig/network-scripts
+#ls
+#vi   ifcfg-eth0   또는  gedit   ifcfg-eth0
+
+#HWADDR
+
+#UUID
+
+ONBOOT=yes
+
+--->HWADDR, UUID 는 주석처리(라인 앞에 # 입력)
+--->ONBOOT=no 로 되어 있으면 ONBOOT=yes 로 변경
+
+#service  network  restart
+#ifconfig
+
+/////////////////////////////////////////////////////////////////////
+
+
+▣ping
+네트워크 점검 명령어
+상대 호스트가 살아 있는지 확인
+
+#ping  168.126.63.1
+64 bytes 로 나오면 정상
+
+ctrl + c 로 중단
+
+#ping  -c 3  www.yahoo.co.kr
+(네이버와 다음은 핑을 막아 놓아서 핑테스트 하면 안 됨)
+
+-c 는 count 옵션
+-c 3 은 패킷을 3 개 보내는 옵션
+
+
+안 될경우
+/etc/resolv.conf 에
+nameserver  192.168.x.2 
+또는
+nameserver  168.126.63.1
+
+등록 후 테스트
+
+
+
+▣실습환경
+                         [인터넷]
+			      |	
+                   [windows real lancard]
+                           x.x.x.x
+                               |
+	         [vmnet8 가상 네트워크 장치]
+	           192.168.x.2(gateway,dns)
+			        |
+     +--------------------+------------------------+
+     |                           |                               |
+   [win7]               [first]	                     [second]
+   192.168.x.1        192.168.x.10                192.168.x.20
+   255.255.255.0     255.255.255.0              255.255.255.0
+
+vmnet8 의 서브넷을 확인후
+리눅스 아이피 설정시 동일하게 적어야 한다.
+
+
+▣Second 리눅스 네트워크 설정 실습
+1. 자신의 폴더에 Second 폴더 만들고 Cent6.4.alz 를 그 안에 압축풀기
+(D:\2_주말반\자신의폴더\Second)
+2. vmware 에서 second 리눅스 open(불러오기)한 후 부팅시키기
+3. 방화벽 해제, selinux 해제
+4. 랜카드 인터페이스명 eth0 설정
+/////////////////////////////////////////////////////////////////////
+#cd  /etc/udev/rules.d
+#vi  70-persistent-net.rules
+마지막 라인만 빼고 모두 # 처리(라인 앞에 # 입력)
+마지막 라인의 eth1 을 eth0 으로 변경
+마지막 라인만 # 으로 시작하면 안 되고 그 위의 라인은 모두 #으로 시작하게 설정
+#reboot
+/////////////////////////////////////////////////////////////////////
+5. setup  또는  system-config-network 로 네트워크 정보 입력
+   아이피 : 192.168.x.20
+   넷마스크 : 255.255.255.0
+   게이트웨이 : 192.168.x.2 
+   DNS 1 : 192.168.x.2
+   DNS 2 : 168.126.63.1
+6. service  network  restart 로 적용
+7. ifconfig 로 확인
+/////////////////////////////////////////////////////////////////////
+아이피 적용이 안 되면
+/etc/sysconfig/network-scripts/ifcfg-eth0 파일을 vi 로 연 후
+ONBOOT=no 설정이 있으면 ONBOOT=yes 로 변경
+HWADDR, UUID 는 # 처리(라인 앞에 # 입력)
+#HWADDR
+#UUID
+저장후 종료
+service  network  restart 로 다시 확인
+/////////////////////////////////////////////////////////////////////
+8. ping 테스트
+9. www.yahoo.co.kr 로 핑테스트한 화면을 캡춰하여 실습게시판에 제출
+
+
+▣리눅스(레드햇)의 네트워크 설정파일
+
+1. /etc/sysconfig/network-scripts/ifcfg-*
+각 NIC 설정 파일
+아이피, 서브넷 마스크, 게이트웨이 등록 파일
+
+파일명 예)ifcfg-eth0, ifcfg-eth1
+
+NIC(Network Interface Card) : 랜카드
+컴퓨터에 장착되는 네트워크를 하기위한 부품
+
+LAN(랜) : LocaL Area Network(근거리 통신망)
+Ethernet(이더넷) : 보통 UTP 케이블을 이용하며 랜(LAN)에서 사용되는
+                       가장 일반적인 통신 방식
+
+MAC(맥) 주소 : Media Access Control Address
+                    랜카드에 할당되어 있는 고유한 주소
+	            Hardware Address(하드웨어 주소), 
+	            Physical Address(물리적 주소) 라고도 한다.
+
+
+
+//////////////////////////////////////////////////////////////////////////
+ifcfg-eth번호 파일의 항목
+
+DEVICE : 네트워크 인터페이스 장치명(eth0, eth1)
+HWADDR : 랜카드의 물리적 주소인 MAC(맥) 어드레스(00:0C:29:9D:9F:E3)
+ONBOOT : 부팅시 해당 디바이스 활성화 유무(yes | no)
+TYPE : 데이터링크 계층의 타입(주로 이더넷 사용)
+BOOTPROTO : 프로토콜 지정(none | static | dhcp)
+DNS1 : 첫번째 네임서버 지정
+DNS2 : 두번째 네임서버 지정
+IPADDR : IP 주소 지정(192.168.10.15)
+NETMASK : 서브넷 마스크 지정(255.255.255.0)
+GATEWAY : 게이트웨이 지정
+
+
+리눅스 버전, 네트워크 설정 프로그램에 따라서
+ifcfg-* 파일에 등록되는 내용이 차이가 남
+
+//////////////////////////////////////////////////////////////////////////
+
+
+2. /etc/resolv.conf
+DNS 서버 주소 설정 파일
+한국통신 DNS 서버 : 168.126.63.1
+
+DNS(Domain Name Service) : 문자 주소를 아이피로 변환해 주는 서비스
+
+형식)
+nameserver  아이피주소
+
+3. /etc/hosts
+IP 주소와 컴퓨터 이름(호스트 이름)을 매칭시켜 놓은 파일
+
+형식)
+IP주소        호스트네임      별칭
+
+#vi   /etc/hosts
+127.0.0.1  linux1.andylec.com  localhost  localhost.localdomin  localhost4  localhost4.localdomain4
+::1           localhost  localhost.localdomain  localhost6  localhost6.localdomain6
+192.168.x.2    vmgw
+
+---> 1번 라인에 linux1.andylec.com 추가
+       linux1.andylec.com 은 설치할 때 지정한 컴퓨터 이름 임
+---> 3번 라인 추가 후 저장 및 종료(192.168.x.2   vmgw)
+
+esc  :wq
+
+#ping  -c3  vmgw
+
+4. /etc/sysconfig/network
+네트워크 기본 설정 파일
+네트워킹, 컴퓨터 이름(호스트 네임) 등록 파일
+
+▣ifconfig
+아이피 확인, 인터페이스(랜카드) 비활성화 및 활성화 할 때 사용
+
+1. 비활성화(사용안함 설정)
+ifconfig  eth0  down 
+
+다운 된 인터페이스는 ifconfig 로 출력 안 되고 ifconfig  -a 옵션으로 확인
+
+2. 활성화(사용함 설정)
+ifconfig  eth0  up
+
+3. ifconfig 를 이용한 아이피 설정(일회성)
+#ifconfig
+#ifconfig  eth0  down
+---> 랜카드 비활성화
+
+#ifconfig
+#ifconfig  eth0  up
+
+#ifconfig  eth0  192.168.1.155  netmask  255.255.255.0
+---> 1회성 아이피 설정
+
+#ifconfig
+#ifconfig  eth0
+#service  network  restart
+
+
+
+
+
+
+

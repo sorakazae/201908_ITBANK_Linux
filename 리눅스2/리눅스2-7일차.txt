@@ -1,0 +1,813 @@
+
+[ITBANK Andylec  주말 리눅스 2 과정]
+
+▣오늘의 수업내용(7일차)
+DNS
+
+▣Domain Name Service(DNS)
+인터넷에 있는 서버의 아이피를 기억하기는 어려우므로 
+문자주소를 사용한다.
+그러나 실제 컴퓨터는 아이피 주소로 통신을 하므로 
+네임서버에서 문자주소를 아이피로 변경해 주어야 한다.
+
+DNS 서비스란 ?
+문자주소를  아이피 주소로 
+또는
+아이피 주소를 문자주소로 변환 시켜주는 서비스
+
+DNS 서비스를 하는 컴퓨터를 네임서버(Name Server) 
+또는 DNS 서버라고 한다.
+
+
+www.andylec.com  --->  IP : 정방향 설정(문자 주소 ---> 아이피 주소)
+IP ---> www.andylec.com   : 역방향 설정(아이피 주소 ---> 문자 주소)
+
+
+▣FQDN
+호스트 이름과 도메인을 함께 표기하여 시스템을 지칭하는 완전한 이름
+
+FQDN(Fully Qualified Domain Name) :  www.andylec.com
+
+www ---> 호스트 네임(host name)
+andylec.com ---> 도메인 네임(domain name)
+
+
+
+[ns.andylec.com] [ftp.andylec.com] [www.andylec.com]
+192.168.0.10        192.168.0.20        192.168.0.30
+----------------------------------------------------------------
+                         andylec.com
+
+
+
+▣DNS UTIL
+nslookup, dig : DNS lookup utility
+
+nslookup 은 DNS query(질의하다) 유틸리티 명령어
+
+
+
+/////////////////////////////////////////////////////////////////////
+#man  nslookup
+NSLOOKUP(1)
+
+NAME
+       nslookup - query Internet name servers interactively
+
+/////////////////////////////////////////////////////////////////////
+
+
+[first]
+#nslookup
+>www.nice.co.kr
+>exit
+
+#nslookup  www.nice.co.kr
+#nslookup  ns.nice.co.kr
+
+
+
+
+#dig
+---> 루트 네임서버 목록이 출력 됨
+
+#dig  www.nice.co.kr
+
+dig  @네임서버  문자주소  타입(ANY,A,MX 등)
+
+#dig  @168.126.63.1  www.nice.co.kr  A
+
+
+▣도메인체계-tree 구조(분산구조)
+
+www.andylec.com
+
+.             루트도메인
+|
+com        1차 도메인
+|
+andylec   2차 도메인
+|
+www       3차  도메인
+
+
+
+1. 도메인 주소(문자주소)는 대소문자 구분 안 함
+2. 네임서버 설정 파일의 단어(레코드)도 대소문자 구분 안 하지만
+알아보기 쉽도록 보통 대문자 사용
+
+
+
+	         . (루트 도메인,루트 네임서버)
+                 |
+ +-----+----+-----+-----+
+com   net           kr      jp  
+
+
+▷win7 웹브라우저에서 www.yahoo.com 이라고 입력했을 때 아이피가 변환되는 과정
+
+1. 네임서버로 지정된 168.126.63.1 서버에 query
+2. 네임서버는 자신이 데이타를 갖고있지 않다면 루트 네임서버에게
+ns.com 서버를 query
+
+루트네임서버에는 com 네임서버, net 네임서버등의 목록을 갖고있다.
+ns.com 네임서버는 com으로 끝나는 네임서버 목록을 갖고 있다.
+ns 는 네임서버를 뜻함
+
+3. ns.com 은 ns.yahoo.com 의 아이피를 리턴
+4. ns.yahoo.com 네임서버는 yahoo.com으로 끝나는 목록(www.yahoo.com, ftp.yahoo.com ..)을 갖고 있다.
+그 중에 www.yahoo.com 이 200.200.200.200 이라면
+클라이언트한테 그 아이피를 리턴한다.
+5. 클라이언트는 200.200.200.200 아이피를 가지고 서버를 찾아간다.
+
+                                            [root 네임서버](2)
+                                                      |
+                                             [ns.com 네임서버](3)
+[win7]-[local DNS](1)                        |
+           168.126.63.1                [ns.yahoo.com 네임서버](4)
+                                             www.yahoo.com 아이피 리턴
+
+리눅스의 경우 /etc/resolv.conf 에 설정된 네임서버가 local DNS 가 된다.
+
+
+▣네임서버 설정 파일 주요 항목
+1) /etc/named.conf
+
+options {
+	directory "/var/named"; ---> 존파일을 저장할 디렉토리
+};
+
+
+zone "." IN {
+	type hint;
+	file "named.ca";
+};
+
+--->zone은 도메인을 구분하는 단위
+--->zone 이 . 이면 루트 네임서버를 뜻한다.
+--->type 은 루트네임서버인지, 1차 네임서버인지, 2차 네임서버인지를 지정한다.
+hint       // 루트네임서버
+master   // 1차 네임서버
+slave     // 2차 네임서버 ---> 1차 서버의 자료를 Copy 해서 저장
+
+---> master , slave 는 리눅스 가상머신의 이름이 아님
+
+--->file "named.ca" 는 루트 네임서버의 목록을 저장하고 있는 
+파일이 named.ca 라는 의미
+
+
+2) /etc/named.rfc1912.zones
+
+☞정방향 설정 : 문자주소를 아이피로 변환할 때 사용하는 설정
+                    (여러 개 설정할 수 있다.)
+
+zone  "kcr2.pe.kr"   IN   {  ---> 정방향 설정
+      type master;
+      file "kcr2.zone"; ---> kcr2.pe.kr 도메인 설정을
+	                         저장할 파일이름이
+	                         /var/named 에 존재해야 한다.
+      allow-update { none; }; ---> 외부 업데이트 금지
+};
+
+
+☞역방향 설정 : 아이피를 문자주소로 변환할 때 사용하는 설정
+                    (1개만 설정할 수 있다.)
+		    자신의 아이피대역을 거꾸로 등록
+
+아이피가 192.168.30.10 이면
+10.30.168.192.in-addr.arpa 로 등록(CentOS 6 버전 기준)
+
+zone "x.x.x.x.in-addr.arpa" IN {  ---> 역방향 설정
+	type master;
+	file "kcr2.rev"; ---> 역방향 설정을 저장할 파일명
+	allow-update { none; };
+};
+
+▣존파일의 레코드 설명
+
+1) kcr2.zone 파일
+
+$TTL   86400 ---> TTL
+(Time to Live, DNS 데이터의 수명, 초단위, 86400은 하루)
+
+24시간*60분*60초=86400
+
+
+@   IN   SOA   ns.kcr2.pe.kr.    root.ns.kcr2.pe.kr.  (
+
+--->@     // Origin 도메인을 의미
+--->IN    // Internet Class
+--->SOA  // Start Of Authority, 관리도메인 지정
+--->ns.kcr2.pe.kr. 에서  마지막의 점은 루트 도메인을 의미
+--->root.ns.kcr2.pe.kr. 관리자 이메일을 뜻함 
+--->root@ns.kcr2.pe.kr 을 root.ns.kcr2.pe.kr. 으로 표시
+
+
+세미콜론은 주석을 뜻함			    
+					    
+년도월일 ; serial ---> 일련번호, 보통 날짜 지정
+3H ; refresh ---> 2차 네임서버가 1차 네임서버 데이타를 
+	               재확인할 시간 간격
+	               3H는 3시간(Hour)
+15M ; retry ---> 1차 네임서버가 다운시 2차 네임서버가 
+	              접속을 시도할 시간간격
+	              15M은  15분(Minute)
+1W ; expiry ---> dns 데이타 만료기간(1차 네임서버가 다운시 
+	              2차 네임서버가 데이타를 사용할 기간)
+		      1W 는 1주일(Week)
+1D ) ; minimum ---> negative caching ttl, NXDOMAIN 정보를 캐시에 저장할 시간, 1D는  하루(Day)
+	
+NXDOMAIN : no-such-domain, 조회한 도메인의 정보가 없을 때 받게 되는 응답(존재하지 않는 도메인)
+
+	IN	NS	 ns.kcr2.pe.kr. 
+---> NS 는 네임서버 지정(A 레코드로 아이피를 지정해 주어야 한다.)
+
+	IN	A	 x.x.x.x
+---> A는  address, A 다음에는 반드시 아이피가 나와야 한다.
+
+
+ns 	     IN	A	 x.x.x.x
+www      IN	A	 x.x.x.x
+--->클라이언트가 www.kcr2.pe.kr 를  query 하면 
+     아이피 x.x.x.x 를 리턴
+
+
+
+2) kcr2.rev 파일
+
+$TTL 86400
+@   IN    SOA    ns.kcr2.pe.kr.      root.ns.kcr2.pe.kr.  (
+			                        년도월일  ; serial
+			                        1D          ; refresh
+				                1H          ; retry
+			                        1W         ; expire
+			                        3H )       ; minimum
+			                        --->정방향 설정과 동일한 의미
+
+	   
+	   NS 	 @
+	   A	         x.x.x.x
+	   PTR 	 ns.kcr2.pe.kr.	
+
+---> 역방향 설정에서는 PTR(포인터 레코드) 다음에 문자주소를 적는다.
+
+nslookup 으로 x.x.x.x 를 query 하면 
+ns.kcr2.pe.kr 을 리턴한다.
+
+
+▣테스트 시나리오
+first 리눅스 서버를 네임서버로 만들고
+www.kcr2.pe.kr 을 입력하면 first 리눅스의 아이피가 출력되게 한다.
+
+리눅스의 네임서버 : BIND
+
+네임서버 설정파일
+1. /etc/named.conf
+2. /etc/named.rfc1912.zones
+3. /var/named 디렉토리의 존파일들
+
+데몬 스크립트 : /etc/init.d/named
+--->네임서버 시작 및 종료 시키는 파일
+
+네임서버 포트 : 53
+
+(참고)
+자신의 리눅스 아이피를적어서 테스트해야 함
+
+
+▣네임서버 설정하기
+[first]
+패키지 확인 및 설치
+#rpm  -qa  |  grep  "^bind"
+bind-utils
+bind-libs
+
+#yum  -y  install  bind  bind-devel
+
+
+1. /etc/named.conf 수정하기(접근제한 설정 해제)
+
+#vi  /etc/named.conf
+
+     10 options {
+     11         listen-on port 53 { any; };  // 수정
+     12         listen-on-v6 port 53 { ::1; };
+     13         directory       "/var/named";
+     14         dump-file       "/var/named/data/cache_dump.db";
+     15         statistics-file "/var/named/data/named_stats.txt";
+     16         memstatistics-file "/var/named/data/named_mem_stats.txt";
+     17         allow-query     { any; }; // 수정
+
+
+2. named.rfc1912.zones 수정하기
+
+#vi  /etc/named.rfc1912.zones
+---> 기존내용은 그대로 두고 마지막에 아래 내용 추가
+버전에 따라 라인 번호는 차이가 날 수 있음
+
+43 zone  "kcr2.pe.kr"   IN   {
+44         type master;
+45         file "kcr2.zone";
+46         allow-update { none; };
+47 };
+48
+49 zone  "x.x.x.x.in-addr.arpa"  IN  {
+50         type master;
+51         file "kcr2.rev";
+52         allow-update { none; };
+53 };
+
+//////////////////////////////////////////////////////
+43번 라인에서 www.kcr2.pe.kr 로 적으면 안 됨
+49번 라인에서 리눅스 아이피가 192.168.30.10 이면
+10.30.168.192.in-addr.arpa 로 적어야 한다.
+//////////////////////////////////////////////////////
+
+
+3. 존파일 생성하기
+존(zone) : 도메인 구분단위(kcr2.pe.kr, andylec.com)
+
+#cd  /var/named
+#pwd
+/var/named
+#ls
+
+#vi  kcr2.zone
+(kcr2.zone 파일명은 /etc/named.rfc1912.zones 의 존설정에서 
+file 다음에 지정해 준 이름으로 생성해야 한다.
+file "kcr2.zone"; ---> /etc/named.rfc1912.zones 의 설정내용)
+왼쪽의 숫자는 라인번호로 타이핑하지 않는다.
+년도월일 은 한글로 적는 것이 아니고 현재날짜를 적으면 된다.
+
+1  $TTL  86400
+2  @  IN   SOA      ns.kcr2.pe.kr.       root.ns.kcr2.pe.kr.   (
+3 				                     20140125    ; serial
+4			                             3H              ; refresh 
+5			                             15M            ; retry 
+6			                             1W             ; expiry
+7				                     1D )            ; minimum 
+8	        IN      NS	       ns.kcr2.pe.kr. 
+9	        IN	 A	       x.x.x.x
+10 ns 	IN	 A	       x.x.x.x
+11 www     IN	 A	       x.x.x.x
+12 ftp        IN	 A	       x.x.x.x
+//////////////////////////////////////////////////////////////////////////
+---> 리눅스 아이피가 192.168.30.5 이면 x.x.x.x 에 192.168.30.5 를 적는다.
+---> ; 은 주석을 의미한다.
+---> 1W ; expiry 에서 W 는 영문대문자(1 Week)
+---> 7번 라인에서 1D 는 숫자 1, 영문 대문자 D
+---> IN NS ns.kcr2.pe.kr. 라인(8번~9번 라인)은 반드시 공백으로 시작해야 한다.
+---> ns  IN  A  x.x.x.x 라인(10번~12번 라인)은 적을 때 공백으로 시작하면 안 된다.
+//////////////////////////////////////////////////////////////////////////
+
+
+☞named-checkzone : 존파일 설정 체크 명령어
+형식)
+named-checkzone  도메인  존파일명
+
+#pwd
+/var/named
+#named-checkzone  kcr2.pe.kr  kcr2.zone
+
+
+#pwd
+/var/named
+(경로 확인)
+
+#vi  kcr2.rev
+$TTL   86400
+@   IN   SOA    ns.kcr2.pe.kr.	 root.ns.kcr2.pe.kr.  (
+	                                         20140125  ; serial
+				                 1D            ; refresh
+			                         1H            ; retry
+			                         1W           ; expire
+			                         3H  )         ; minimum
+	 NS     @
+	 A       x.x.x.x
+	 PTR    ns.kcr2.pe.kr.	
+/////////////////////////////////////////////////////////////////////
+x.x.x.x 에는 리눅스아이피를 적는다.(거꾸로 적는 것이 아님)
+A 다음에는 네임서버로 설정하고 있는 리눅스 아이피 적기
+파일 작성할 때 공백 주기
+/////////////////////////////////////////////////////////////////////
+
+#pwd
+/var/named
+#named-checkzone  kcr2.pe.kr  kcr2.rev
+존파일 체크하기
+
+
+
+4. 소유권 변경
+#pwd
+/var/named
+#chmod  660  /var/named/kcr2*
+#chown  root:named  /var/named/kcr2*
+#ls  -l
+
+
+☞named-checkconf  :  네임서버 주설정파일 체크 명령어
+
+/////////////////////////////////////////////////////////////////////
+#man  named-checkconf
+
+NAME
+       named-checkconf - named configuration file syntax checking tool
+
+ -z     Perform a check load the master zonefiles found in named.conf.
+/////////////////////////////////////////////////////////////////////
+
+#named-checkconf  -z  /etc/named.conf
+
+
+5. 네임서버 테스트
+1)DNS 클라이언트 설정 파일 변경(/etc/resolv.conf)
+2)네임서버 시작
+3)nslookup 으로 테스트
+
+
+/////////////////////////////////////////////////////////////////////
+본사
+  |
+서울지사                              대구지사             부산지사
+  |
+서울강남지점  서울강북지점
+
+
+
+[고객이사는동네상점]----------고객
+/////////////////////////////////////////////////////////////////////
+
+
+[first]
+#vi  /etc/resolv.conf
+nameserver  192.168.x.10(---> 첫번째리눅스의 아이피를 적는다.)
+nameserver  168.126.63.1
+
+#service  named  restart
+
+#netstat -ntlp | grep  named
+---> 네임서버는 53번 포트를 사용함
+
+#cat  /etc/services  |  grep domain
+domain          53/tcp                          # name-domain server
+domain          53/udp
+
+#ps  -ef  |  grep  named
+---> 메모리에 실행된 네임서버 검색
+
+
+테스트 1)
+[first]
+#nslookup  www.kcr2.pe.kr
+#nslookup  192.168.x.10
+--->첫번째리눅스의 아이피 입력
+
+테스트 2)
+[first]
+#service  httpd  restart
+#netstat -ntlp  |  grep  httpd
+
+[first]                             [2003]
+웹서버                            웹브라우저
+네임서버
+192.168.x.10
+
+
+[win2003]
+네트워크 설정에서 네임서버를 첫번째리눅스 아이피 192.168.x.10 으로 변경
+웹브라우저
+http://www.kcr2.pe.kr
+
+
+[second]
+#vi  /etc/resolv.conf
+
+nameserver  192.168.x.10 (---> 첫번째리눅스 아이피로 설정)
+nameserver  168.126.63.1
+
+#nslookup  www.kcr2.pe.kr
+
+second 리눅스 웹브라우저 실행후
+http://www.kcr2.pe.kr 입력해서 홈페이지 출력 확인
+
+
+테스트 3)
+[first]                     [second]                  [win2003]
+네임서버                  웹서버                    클라이언트
+192.168.x.10            192.168.x.20
+
+[first]
+#cd  /var/named
+#vi  kcr2.zone
+
+www   IN   A    192.168.x.20  
+---> 위와 같이 변경
+
+#service  named  restart
+#nslookup  www.kcr2.pe.kr
+---> 두번째리눅스 아이피 출력 확인
+
+
+[second]
+#cd  /var/www/html
+#vi  index.html
+<html>
+<body>
+<h1>
+Second  Linux Web  Server <br>
+IP : 192.168.x.20 <br>
+</h1>
+</body>
+</html>
+
+
+/etc/httpd/conf/httpd.conf 파일의 292 번 라인 확인
+292 DocumentRoot  "/var/www/html"
+
+#service  httpd  restart
+
+
+[win2003]
+웹브라우저 실행후  http://www.kcr2.pe.kr 입력
+두번째리눅스 홈페이지가 나와야 정상
+첫번째리눅스홈페이지가 나오면
+도스창 실행(시작-실행-cmd)후 아래 입력후 테스트
+C:\>ipconfig  /flushdns
+
+
+▣실습
+second 리눅스 네임서버에 자신의 도메인을 설정
+(자신의 영문이름이니셜 또는 자신의 닉네임 사용)
+
+nslookup 으로 테스트하면 second 리눅스 아이피가 리턴되도록 설정하시오
+--->정방향 설정(zone  "kcr2.pe.kr")은 여러 개 할 수 있고 
+     역방향 설정(zone  "x.x.x.x.in-addr.arpa")은 하나만 할 수 있다.
+
+#nslookup    자신의도메인
+/////////////////////////////////////////////////////////////////////
+-네임서버 패키지 확인 및 설치
+-접근제한 해제
+-존 등록(/etc/named.rfc1912.zones)
+-존 파일 생성(/var/named 폴더 안)
+-소유권 변경(#chown   root:named  존파일)
+-네임서버 시작
+-/etc/resolv.conf 변경
+-nslookup 으로 테스트
+/////////////////////////////////////////////////////////////////////
+
+
+
+▣가상호스트 실습준비
+[first]
+#netstat  -ntlp  |  grep  named
+53 번 포트확인하고 없으면 서비스 시작시키기
+#service  named  restart
+
+#nslookup  www.kcr2.pe.kr
+아이피 출력되는지 확인
+---> 첫번째리눅스 아이피가 출력되도록 수정
+
+
+/etc/resolv.conf 에서 아래 내용 확인
+nameserver  첫번째리눅스아이피
+nameserver  168.126.63.1
+
+
+#vi  /etc/named.rfc1912.zones
+andylec2.net 존 설정 확인
+
+zone "kcr2.pe.kr" IN {  ---> 없으면 추가하기
+	type  master;
+	file "kcr2.zone";
+	allow-update { none; };
+};
+
+zone "x.x.x.x.in-addr.arpa" { ---> 새로 추가하면 안 됨, x.x.x.x.in-addr.arpa 설정은 하나만 있어야 한다.
+        type master;
+        file "kcr2.rev";
+        allow-update { none; };
+};
+
+zone "andylec2.net" IN {  ---> 없으면 마지막 부분에 새로 추가하기
+	type  master;
+	file "andylec2.zone";
+	allow-update { none; };
+};
+
+#cd  /var/named
+#ls
+andylec2.zone 파일 있으면 아래 명령 생략
+
+
+/////////////////////////////////////////////////////////////////////
+#cp  kcr2.zone  andylec2.zone
+#vi  andylec2.zone
+:%s/kcr2.pe.kr/andylec2.net/g (--->vi 치환기능 사용)
+
+--->kcr2.pe.kr 을 andylec2.net 으로 치환하고 저장후 종료하기
+
+#chown   root:named  andylec2.zone
+---> 소유권 변경
+/////////////////////////////////////////////////////////////////////
+
+
+
+
+
+#service  named  restart
+
+#cat  /etc/resolv.conf
+nameserver 첫번째리눅스아이피
+nameserver 168.126.63.1
+
+--->위와 같은지 확인
+
+설정후 테스트 결과
+#nslookup www.andylec2.net
+---> 첫번째리눅스 아이피 출력 확인
+
+#nslookup www.kcr2.pe.kr
+---> 첫번째리눅스 아이피 출력 확인
+
+---> 두번째리눅스 아이피로 나오면 첫번째리눅스 아이피로 변경
+
+
+
+▣가상호스트(VirtualHost)란 ?
+호스트는 컴퓨터를 뜻하며 가상으로 컴퓨터가 여러 개 있는 효과를 내는 
+웹서버의 기능을 가상호스트 기능이라 한다.
+
+회사에서 운영하려고 하는 홈페이지가 2 개이고 서버가 2대이면 
+각 서버에 서로 다른 홈페이지가 나오도록 설정할 수 있지만
+서버가 한 대 이어도 가상호스트를 이용하면 서버가 
+2대 인 것처럼 홈페이지를 여러 개 운영할 수 있다.
+실제 웹호스팅 업체에서 사용되고 있는 방식이다.
+
+
+◈서버가 2 대일 때
+[server1]	                [server2]
+www.kcr2.pe.kr		www.andylec2.net
+
+
+◈서버가 1대이고 가상호스트 이용할 때
+		
+		   server1(Virtual Host 사용)
+                          |
+      +--------------+-------------+
+      |                                      |
+www.kcr2.pe.kr              www.andylec2.net
+192.168.x.10                  192.168.x.10
+
+두 도메인에 대해서 서로 다른 디렉토리를 
+찾아갈 수 있도록 웹서버가 지원한다.
+네임서버는 두 도메인 대해서 server1 의 아이피가
+동일하게 리턴되도록 설정되어 있어야 한다.
+
+
+◈가상호스트 설정하기
+[first]
+#cd  /etc/httpd/conf
+#vi  httpd.conf
+
+shift + g 를 누르면 마지막 라인으로 이동한다.
+라인번호는 차이가 날 수 있으므로 내용을 확인해서 수정하기
+
+991 라인을 # 제거후 아래와 같이 수정하기
+991 NameVirtualHost   192.168.x.10
+/////////////////////////////////////////////////////////////////////
+--->#을 제거하고 첫번째리눅스 아이피를 적는다.
+--->192.168.0.10:80 으로 적으면 하위 설정에서도 동일하게 적어야 한다.
+/////////////////////////////////////////////////////////////////////
+
+마지막 라인에 아래 추가
+<VirtualHost  192.168.x.10>
+   ServerName  www.kcr2.pe.kr
+</VirtualHost>
+
+
+<VirtualHost  192.168.x.10>
+   ServerAdmin     root@ns.andylec2.net
+   DocumentRoot  /home/polo/public_html
+   ServerName      www.andylec2.net
+   ErrorLog          logs/www.andylec2.net-error_log
+   CustomLog       logs/www.andylec2.net-access_log  common
+</VirtualHost>
+//////////////////////////////////////////////////////////////////////////
+--->ErrorLog 와 CustomLog 다음에는 log 가 아니고 logs 로 적어야 한다.
+     ErrorLog, CustomLog 에서 logs 는 rpm 버전일 때
+     /etc/httpd/logs(=> /var/log/httpd) 디렉토리를 뜻한다.
+     그러므로 log/www.andylec2.net-error_log 라고 적으면 
+     로그파일을 만들 수 없어서 웹서버가 시작되지 않는다.
+//////////////////////////////////////////////////////////////////////////
+
+#cd  /etc/httpd
+#ls
+conf  conf.d  logs  modules  run
+#ll
+lrwxrwxrwx  1 root root   19  2월 12 09:45 logs -> ../../var/log/httpd
+
+(/etc/httpd/logs 는 실제로는 /var/log/httpd 디렉토리이다.)
+
+
+◈가상호스트 설정 설명
+
+NameVirtualHost  x.x.x.x
+---> 가상호스트 사용할 아이피 지정
+---> 가상호스트의 네임서버 역할
+---> 이 설정이 없으면 이름 기반 가상호스트가 적용 안 됨
+
+
+
+<VirtualHost  x.x.x.x>
+	ServerName  www.kcr2.pe.kr
+</VirtualHost>
+---> 기본 도메인에 대한 가상호스트 설정(Default 설정)
+---> /var/www/html 를 찾아감
+---> 이 설정이 없으면 아래 가상호스트와 똑같이 나온다.
+---> 첫번째 적은 도메인 주소가 디폴트로 설정 됨
+
+
+<VirtualHost  x.x.x.x> ---> 가상호스트 설정 시작
+ServerAdmin  root@ns.andylec2.net
+---> 관리자 이메일 지정
+
+DocumentRoot  /home/polo/public_html
+---> 홈페이지 문서가 저장된 디렉토리 지정
+
+ServerName  www.andylec2.net
+---> 가상호스트 적용할 도메인 지정
+      즉 www.andylec2.net 을 요청받으면 DocumentRoot 로 찾아가서 
+      웹페이지를 보여준다.
+
+ErrorLog  logs/www.andylec2.net-error_log
+---> 에러를 기록할 파일지정
+      /var/log/httpd 에 저장됨
+
+CustomLog  logs/www.andylec2.net-access_log  common
+---> 정상적인 접속을 기록할 파일 지정, common 은 로그타입을 의미
+
+</VirtualHost> ---> 가상호스트 설정 끝
+
+
+▣테스트 계정 및 홈페이지 생성하기
+#adduser  polo
+#cd ~polo
+#cd  public_html (디렉토리 없으면 #mkdir  public_html 입력해서 생성하기)
+#pwd
+/home/polo/public_html
+#ls
+index.html
+#vi  index.html
+      1 <html>
+      2 <body>
+      3 <h1>
+      4 <i>
+      5 Polo's Homepage
+      6 </i>
+      7 </h1>
+      8 <font color=navy size=7>www.andylec2.net</font> 
+      9 </body>
+     10 </html>
+---> 왼쪽 숫자는 라인 번호이므로 타이핑하지 않는다.
+
+
+#apachectl  configtest
+Syntax OK ---> 문법 검사 결과 OK
+
+
+#apachectl  -S
+--->가상호스트 설정 확인(OK 로 출력되어야 함)
+
+
+#service httpd restart
+
+
+▣테스트 환경
+[first] <------------------------------> [second]
+웹서버                                           클라이언트(웹브라우저)
+네임서버
+www.kcr2.pe.kr
+www.andylec2.net
+
+
+[second]
+#vi  /etc/resolv.conf
+nameserver  x.x.x.x (---> first 리눅스의 아이피로 변경)
+nameserver  168.126.63.1
+
+#nslookup  www.kcr2.pe.kr
+#nslookup  www.andylec2.net
+
+
+second 리눅스 웹브라우저 실행(/etc/resolv.conf 변경후 테스트)
+http://www.kcr2.pe.kr 
+http://www.andylec2.net
+
+--->Forbidden 으로 출력되면 first 리눅스에서 아래 명령 실행 후 테스트 
+      #chmod  755  /home/polo 
+          
+--->똑같이 보인다면 새로고침 버튼을 눌러본다.
+(그래도 똑같이 나온다면 가상호스트 설정이 잘못된 것이다.)
+
+

@@ -1,0 +1,239 @@
+mysql 설치 및 운영
+1. rpm -qa mysql*
+2. yum -y install mysql-server
+3. service mysqld status
+4. quit
+5. root사용자에게 1234 패스워드 설정
+mysqladmin -u root password '1234' -> 생성
+6. mysql -> root 암호가 설정 되어 있어서 접근 불가능
+mysql -u <사용자 > -p<비밀번호>
+mysql -u root -p -> '1234'
+7. www.mysql.com 제공해 주는 windows 에서 mysql 접속 프로그램 ->downloads ->Mysql Community Server -> Windows 접속 프로그램 다운로드
+8. mysql-essential-4.1.2-wins32-msi->custom->ClientPrograms ->확장->mysql server instance config 사용안함 
+Client Programs ->change ->c:\mysql -> 이메일 skip
+9. c:\mysql\bin\  ->mysql -h 192.168.100.150 -u root -p
+10 mysql 서버
+mysql -u root -p 
+암호 : 1234
+-> 10.10.0.110 클라이언트 컴퓨터에서 mysql 서버에 접속할 수 있도록 권한을 부여
+mysql >use mysql
+mysql > grant all privileges on *.* to 'root'@'192.168.100.202' identified by '4321';
+mysql >select user, host from user where user not like ''; 
+
+11 클라이언트 xp
+c:\mysql\bin\  ->mysql -h 192.168.100.150 -u root -p
+암호 :4321
+
+DDL(Data Definition Language) 은 데이터베이스의 스키마 객체를 생성(CREATE),
+변경(ALTER), 제거(DROP) 하거나 권한의 부여나 박탈(GRANT, REVOKE), 주석(COMMENT),
+자료의 버림(TRUNCATE) 등을 수행하는 문장의 집단을 의미한다.
+각 문장은 CREATE, ALTER, DROP, TRUNCATE, GRANT, REVOKE, COMMENT 등으로 시작한다.
+이 밖에도 많은 종류의 DDL이 존재한다. 그러나 PL/SQL 블록에서는 DDL을 사용할 수 없다.
+
+DML(Data Manipulation Language)은 스키마 객체의 데이터를 입력(INSERT), 수정(UPDATE),
+[Manipulation=교묘한처리,조종]
+조회(SELECT), 삭제(DELETE)하거나 테이블에 잠금을 설정하거나 (LOCK TABLE), SQL문의
+처리의 절차에 대한 정보를 얻거나 (EXPLAIN PLAN), PL/SQL 모듈을 호출하는 작업(CALL)의 집단이다.
+각 문장은 INSERT, UPDATE, DELETE, SELECT, LOCK TABLE, EXPLAIN PLAN, CALL 등으로 시작된다.
+PL/SQL의 모듈에서 사용할 수 없는 DML로서는 EXPLAIN PLAN과 CALL이 있다.
+
+DCL(Data Control Language)은 트랜잭션의 성격을 제어하는 것으로서 SET TRANSACTION,
+COMMIT, ROLLBACK, SAVEPOINT와 같은 종류가 있다.
+PL/SQL 모듈에서는 DCL을 사용할 수 있고 DCL을 이용하여 모듈의 트랜잭션을 제어 할 수 있다.
+
+ 
+
+mysql 설치 및 운영
+1. rpm -qa mysql*
+2. yum -y install mysql-server
+3. service mysqld status
+4. quit
+5. root사용자에게 1234 패스워드 설정
+mysqladmin -u root password '1234' -> 생성
+6. mysql -> root 암호가 설정 되어 있어서 접근 불가능
+mysql -u <사용자 > -p<비밀번호>
+mysql -u root -p -> '1234'
+
+
+create database shop;
+show databases;
+use shopp;
+
+
+drop table customer;
+
+create table customer(
+id varchar(10) not null primary key,
+name varchar(20),
+age int,
+address varchar(20)
+);
+show tables;
+
+drop table purchase;
+
+create table purchase(
+no int not null primary key auto_increment,
+custom_id varchar(10),
+date char(8),
+product varchar(15)
+);
+테이블의 구조
+desc customer;
+desc purchase;
+
+
+insert into customer values('hong', '홍길동', 20,'서울시종로구');
+insert into customer values('hong5', null, 30, '서울시종로구');
+insert into customer values('hong4', '홍길동3', 40, '서울시종로구');
+
+select * from customer;
+
+
+insert into purchase(custom_id, date, product) values
+('k111','20100225', 'itbank');
+
+insert into purchase(custom_id, date, product) values
+('k222','20100225', 'ibbank');
+insert into purchase(custom_id, date, product) values
+('k333','20100225', 'soldesk');
+
+select * from purchase;
+
+delete from customer where id='hong';
+select * from customer;
+
+update customer set name='홍길산', address='서울시 동대문구' where id='hong';
+
+아이디가 'hong2' 사용자의 나이= 80 주소 '황천시'
+
+update customer set age=80, address='황천시' where id='hong2';
+
+
+update customer set name='강길산' where id='hong'
+나이순으로 내림차순 정렬
+select * from customer order by age desc;
+
+이름이 '홍길산' 인 레코드
+select * from customer where name='홍길산';
+
+이름이 '홍' 으로 시작하는 레코드
+select * from customer where name like '홍%';
+
+이름이 '길' 이 들어 있는 레코드
+select * from customer where name like '%길%';
+이름이 '산'으로 끝나는 레코드 출력..
+select * from customer where name like '%산';
+
+
+나이가 30살 이상인 레코드
+select * from customer where age >=30
+나이가 20살에서 30살 사이 레코드 
+select * from customer where age >=20 and age <=30
+
+select * from customer where age between 20 and 30
+
+이름이 '홍'으로 시작하고 나이가 40살인 레코드 
+select * from customer 
+where
+name like '홍%' and age=30
+
+이름이 '홍' 으로 시작하면서 나이가 많은순으로 이름 나이 출력...
+select name, age from customer where name like '홍%'
+order by age desc;
+
+select * from customer 
+order by age desc;
+
+---------------------------------------
+purchase 테이블
+- 번호가 2번 레코드 출력
+select * from purchase 
+where no=2;
+- 상품명을 오름차순으로 출력
+select * from purchase 
+order by product 
+- id가 2로 끝나는 레코드 출력
+select * from purchase  
+where custom_id like '%2';
+- 상품명에 bb 가 들어간 레코드 출력
+select * from purchase 
+where product like '%bb%';
+- 아이디가 2로 끝나면서 상품명이 ibbank 레코드 출력
+select * from purchase 
+where custom_id like '%2' and product='ibbank';
+- 아이디가 k로 시작하면서 상품명이 s로 시작하는 레코드 출력
+select * from purchase 
+where custom_id like 'k%' and product like 's%';
+- 번호가 2-3 레코드 출력
+select * from purchase  
+no between 2 and 3
+- 번호가 1번 레코드의 상품명을 itwill로 수정
+update purchase set product='itwill' 
+where no=1
+- 번호가 2번 레코드 삭제
+delete from purchase where no=2;
+
+- 
+insert into purchase(custom_id, date, product) values
+('k444','20100225', null);
+
+- 상품명이 null 값인 있는 레코드
+select * from purchase  where product is null;
+- 상품명이 null 값이 없는 레코드 
+select * from purchase  where product is  not null;
+- 상품명이 's' 로 시작하지 않는 레코드
+select * from purchase  where product not like 's%';
+- 아이디가 'k444' 아닌 레코드 출력
+select * from purchase  where custom_id <> 'k444';
+1`	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-----------------------------------------------------------
+DB명 : ibbank
+ 테이블 생성 : se4
+no ->자동증가 , primary key
+name
+age
+email
+hp
+
+insert 이용해서 자료 입력 2명
+update 1번 -> name 변경
+delete from se4
+
+drop database se4;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

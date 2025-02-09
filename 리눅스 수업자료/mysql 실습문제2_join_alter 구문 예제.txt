@@ -1,0 +1,83 @@
+
+
+
+itbank db에 테이블 생성
+테이블명 : Product
+순번 : no 기본키 , 자동증가, int
+상품코드 : pcode 공백허용안함 자료형  varchar
+상품명 : pname 공백허용안함 자료형 varchar
+상품가격 : price 자료형 : tinyint
+판매자  이메일 : email 자료형 : varchar
+상품판매일 : pday 자료형 : char 기본값 : 오늘날짜 함수 사용
+
+입력 
+
+s1  새우깡1   	 10	  a@a.com	2010-04-05
+s2  새우깡2  	 20 	  null		2010-07-08		
+p1  피자과자1	 30	  b@b.com 	2011-01-01
+p2  피자과자2 	 40	 null		2011-04-05
+  
+1. 순번 내림 차순 정렬
+2.  번호가 3번에서 4번 레코드 출력
+3. 상품코드가 s로 시작하는 순번 ,상품코드 ,상품명 출력
+4. 이메일이 null값인 레코드 출력
+5. 가격이 30원이상인 레코드 출력
+6. 과자명이 '피'로 시작하면서 가격이 30원인 레코드 출력
+7. 이메일이 있는 레코드 출력
+8. 이메일이 null 이 아닌 레코드 출력(null 값을 이용해서 출력)
+9. 상품명이 새우깡1 과 피자과자1 출력
+10. 상품코드가 P2번 레코드 삭제
+11. 상품코드가 S1번인 상품명을 감자깡으로 수정
+
+
+
+Alter table customer MODIFY name char(20);
+고객정보 테이블의 이름 필드 타입을 char(20)으로 변경
+
+Alter table customer change name fullname char(10);
+고객 테이블의 name 필드를 fullname으로 바꾸고 자릿수는 char(10)으로 지정한다.
+
+alter table customer add phone varchar(20) after name;
+고객정보 테이블에서 이름(name)필드 바로 다음에 전화번호(phone)필드를 추가한다.
+
+alter table customer drop age;
+
+고객정보 테이블에서 나이(age)필드를 삭제한다.
+
+
+
+create table a(a char(2), b char(2));
+desc a;
+
+create table b(a char(2), c char(2));
+
+desc b;
+
+inser into a values(1,'a')
+inser into a values(2,'b')
+inser into a values(3,'c')
+
+
+inser into b values(2,'b')
+inser into a values(3,'e')
+1. INNER JOIN
+select 테이블명.필드명, 테이블명.필드명,.... frmo 테이블명 inner join 테이블명 where 조건
+
+select a.a, a.b, b.c from a inner join b where a.a=b.a;
+
+INNER JOIN은 테이블의 간의 교집합니다.
+
+2. LEFT OUTER JOIN
+select 테이블명.필드명, 테이블명.필드명,.... frmo 테이블명 left outer join 테이블명 on 조건
+
+select a.a, a.b, b.c from a left outer join on a.a=b.a
+
+LEFT OUTER JOIN 은 왼쪽테이블을 우선으로 불러들이고 , 그다음  B테이블과 비교해서 같은값은 그대로 적용하고, 서로 다른 값은 a 테이블의 장보를 적용합니다. 양쪽 다 정보가 없을땐 null로 표시하게 됩니다.
+
+
+2. RIGHT OUTER JOIN
+select 테이블명.필드명, 테이블명.필드명,.... frmo 테이블명 right outer join 테이블명 on 조건
+
+select a.a, a.b, b.c from a right outer join on a.a=b.a
+
+RIGHT OUTER JOIN 은 오른쪽테이블을 우선으로 불러들이고 , 그다음  A테이블과 비교해서 같은값은 그대로 적용하고, 서로 다른 값은 오른쪽 테이블을 우선으로 불러들이게 됩니다. A테이블의 1 a을 불러들이지 않는 이유는 B 테이블에서는 a의 정보가 없어서 서로 비교를 하지 않는다.

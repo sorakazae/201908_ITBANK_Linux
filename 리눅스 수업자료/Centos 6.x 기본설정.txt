@@ -1,0 +1,427 @@
+0. 서버의 생명은 우선 시간!!! 시간 동기화 해주고
+
+
+# rdate -s time.bora.net
+
+
+
+
+1. 사용할 아이디 생성 (root 직접 접근은 보안상 안좋음)
+
+#useradd memberId
+
+#passwd memberId
+
+Changing password for user memberId.
+New password: 
+Retype new password: 
+
+
+passwd: all authentication tokens updated successfully.
+
+
+
+
+2. 생성한 아이디로 외부에서 접속해보기
+
+
+
+
+3. vim 설치 (파일 편집하기 위해선 필요)
+
+# yum install vim
+
+
+
+
+4. 직접 root 접속 못하게 막기 (이건 외부에 접속 가능한 일반 아이디가 확실히 있는지 확인하고 해야됨^^)
+
+
+# vim /etc/ssh/sshd_config 
+
+
+PermitRootLogin no
+
+# service sshd restart
+
+Stopping sshd:                                             [  OK  ]
+Starting sshd:                                             [  OK  ]
+
+
+
+
+5. APM 설치하기 (mysql => apache => php)
+
+# yum install mysql mysql-server
+
+# yum install httpd
+
+# yum install php
+
+
+
+
+// 그리고 추가적으로 php 에서 사용하는 라이브러리가 좀되니 그건 기본적으로 설치해줌
+
+# yum install gd gd-devel libpng libpng-devel libjpeg libjpeg-devel freetype freetype-devel fontconfig  fontconfig-devel libxml2 libxml2-devel openssl openssl-devel gmp gmp-devel mhash mhash-devel libmcrypt libmcrypt-devel mysql-server php-mysql php-devel php-gd php-mbstring php-mhash
+
+
+
+
+// 참고로 mysql 까지 한방설치하기
+
+# yum groupinstall "MySQL Database" "Web Server"
+
+
+
+
+6. 부팅시 apache 와 mysql 자동 띄우기
+
+# chkconfig --level 2345 httpd on
+
+# chkconfig --level 2345 mysqld on
+
+
+
+
+7. mysql 설정하기 (자세한 설정은 디비 사용하면서 잡기)
+
+7.1 디비 설정파일 복사  샘플 위치 /usr/share/mysql/my-{종류}.cnf, 
+
+종류: huge:1GB 이상, large:512MB ~ 1GB, medium.:128MB ~ 256MB, small:64MB 이하
+
+# cp /usr/share/mysql/my-large.cnf /etc/my.cnf 
+
+
+
+
+7.2 서버시작
+
+# service mysqld start
+
+
+
+
+7.3 비밀번호 설정 및 접속 확인
+
+# mysqladmin -uroot password 비밀번호
+
+# mysql -uroot -p
+
+Enter password: 비밀번호
+
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+
+....
+
+
+
+
+// 혹시 비밀번호 등록 안되어있는 사용자 업데이트 하기
+
+mysql> use mysql;
+Database changed
+
+mysql> update user set password=password('비밀번호') where password='';
+
+
+
+
+
+7.4 사용자 등록 및 디비 생성
+
+// mysql 디비로 이동
+
+
+mysql> use mysql;
+Database changed
+
+
+
+
+// 디비 생성
+
+
+mysql> create database `db_name` character set utf8 collate utf8_general_ci;
+Query OK, 1 row affected (0.00 sec)
+
+
+
+
+
+// 사용자 생성 (로컬접속 & 전체접속)
+mysql> GRANT ALL PRIVILEGES ON * .* TO 'user_id'@'localhost' IDENTIFIED BY 'password' WITH GRANT OPTION;
+Query OK, 0 rows affected (0.00 sec)
+
+
+
+mysql> GRANT ALL PRIVILEGES ON * .* TO 'user_id'@'%' IDENTIFIED BY 'password' WITH GRANT OPTION;
+Query OK, 0 rows affected (0.00 sec)
+
+
+
+
+
+// 디비와 사용자 연결하기 (테스트용이니 권한은 모조리, 자리수 틀릴지 모름 필요한 권한만 잡아 넣어줌 됨)
+
+mysql> INSERT INTO db VALUES ('localhost','db_name','user_id','Y','Y','Y','Y','Y','Y','N','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y');
+mysql> INSERT INTO db VALUES ('%','db_name','user_id','Y','Y','Y','Y','Y','Y','N','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y');
+
+
+
+
+// 디비와 사용자 연결하기 다른 방법 (모든 권한 주기)
+mysql> GRANT ALL ON db_name.* TO 'user_id';
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> GRANT ALL ON db_name.* TO 'user_id@localhost';
+Query OK, 0 rows affected (0.00 sec)
+
+
+
+
+
+// 디비에 바로 반영 시키기
+mysql> flush privileges;
+Query OK, 0 rows affected (0.00 sec)
+
+
+
+
+// 외부에서 접근 안되면 3306번 방화벽 열어주기
+
+# iptables -I INPUT -p tcp --dport 80 -j ACCEPT
+
+# service iptables save
+
+iptables: Saving firewall rules to /etc/sysconfig/iptables:[  OK  ]
+
+# service iptables restart
+
+iptables: Flushing firewall rules:                         [  OK  ]
+
+iptables: Setting chains to policy ACCEPT: filter          [  OK  ]
+
+iptables: Unloading modules:                               [  OK  ]
+
+iptables: Applying firewall rules:                         [  OK  ]
+
+
+
+
+
+
+
+8. apache 기본설정 (세밀한건 운영하면서 잡고, 우선 기본적인것만)
+
+8.1 기본설정
+
+ServerName domain:80
+
+DirectoryIndex index.html index.php index.htm
+
+
+
+
+8.2 PHP 연결하기 (AddType application 위치를 찾는다), 아래 내용 추가
+
+
+AddType application/x-httpd-php .htm .html .php .ph php3 .php4 .phtml .inc
+
+AddType application/x-httpd-php-source .phps
+
+
+
+
+# service httpd restart
+
+
+
+
+// 외부에서 접속이 안된다면. 80 포트 방화벽 등록, 저장 => 재시작
+
+# iptables -I INPUT -p tcp --dport 80 -j ACCEPT
+
+
+# service iptables save
+
+iptables: Saving firewall rules to /etc/sysconfig/iptables:[  OK  ]
+
+# service iptables restart
+
+iptables: Flushing firewall rules:                         [  OK  ]
+
+iptables: Setting chains to policy ACCEPT: filter          [  OK  ]
+
+iptables: Unloading modules:                               [  OK  ]
+
+iptables: Applying firewall rules:                         [  OK  ]
+
+
+
+가상호스트 설정
+가상호스트 설정시 /var/www/하위디렉토리로 홈디렉토리를 만들어야 가상호스트 설정이 적용됨
+ServerName 127.0.0.1 로 처리해야 서비스 재시작시 경고 메세지 안뜸
+NameVirtualHost *:80
+
+<VirtualHost *:80>
+#    ServerAdmin webmaster@dummy-host.example.com
+    DocumentRoot /var/www/www1
+    ServerName eduitbank.asia
+#    ErrorLog logs/dummy-host.example.com-error_log
+#    CustomLog logs/dummy-host.example.com-access_log common
+</VirtualHost>
+
+<VirtualHost *:80>
+#    ServerAdmin webmaster@dummy-host.example.com
+    DocumentRoot /var/www/www2
+    ServerName www.eduitbank.asia
+#    ErrorLog logs/dummy-host.example.com-error_log
+#    CustomLog logs/dummy-host.example.com-access_log common
+</VirtualHost>
+
+
+
+// 접속 테스트
+
+Forbidden
+
+You don't have permission to access / on this server.
+Apache/2.2.15 (CentOS) Server at www.domain.com Port 80
+
+
+
+
+// /home/htdocs/ 권한 확인함. 폴더는 rwx r-x r-x 로 되어야함(소유자:읽고쓰고실행, 그룹,전체:읽고쓰기)
+
+# chmod -R 755 /home/htdocs/
+
+
+
+
+끝~~~
+
+
+[CentOS 6.4] Apache UserDir 모듈
+
+별거 없다
+userdir 을 찾아 주석을 해제 한다.
+
+
+UserDir enable *
+UserDir disable root
+
+UserDir public_html
+
+그 밑에 보면 Directory 관련해서 풀어야 할 내용들이 있다.
+이것도 역시 풀어준다.
+
+그럼 끝!
+내일 와서 다시 적는다.
+
+
+CentOS 6.4 SSL 구축하기
+phpMyAdmin을 설치하려고 보니 SSL 구축을 하는게 좋다고 경고가 있었다. 어차피 해야 하기 때문에 SSL 구축을 위한 글들을 검색하다 CentOS 에서 직접 제공하는 문서가 있길래 냉큼 가져와 수행했다. 영어로 되어있어 나의 경험을 살려 재 작성한다. 본문 링크를 함께 걸었으니 직접 봐도 좋다. 
+
+본문 : http://wiki.centos.org/HowTos/Https
+나중에 구매한 SSL을 적용하게 되면 또 업데이트 하겠다. 궁금하지 아니한가?!
+
+1. 필요한 소프트웨어
+SSL 암호화를 위해 OpenSSL과 mod_ssl이 필요하다. 6.4 버전에서는 openssl이 자동 설치되는 걸로 알고 있다.
+
+
+# yum install mod_ssl openssl
+
+2. self-signed certificate 생성
+OpenSSL을 이용해 self-signed certificate를 생성한다. 위에서 쓴 글이지만 서비스를 할 예정이라면 verisign과 같은 업체에서 인증서를 사서 써야겠지만 개인 사이트라면 self-signed certificate 라면 충분하다고 한다. 다음과 같이 입력하거나 복사&붙여넣는다.
+
+인증서 생성에 대한 보다 자세한 설명은 아래 링크를 참조한다.
+http://dimdim.tistory.com/50
+
+private key 생성
+# openssl genrsa -out ca.key 1024
+
+CSR 생성
+# openssl req -new -key ca.key -out ca.csr
+
+Self signed key 생성
+# openssl x509 -req -days 365 -in ca.csr -signkey ca.key -out ca.crt
+
+다음 위치에 files을 복사한다.
+# cp ca.crt /etc/pki/tls/certs
+# cp ca.key /etc/pki/tls/private/ca.key
+# cp ca.csr /etc/pki/tls/private/ca.csr
+--csr(certificate singing Request) 인증서명 요청
+
+CSR은 웹서버의 자격증명을 하기 위해 제출하는 요청문서로
+개인키로 암호화 48bit ~ 1024bit 한 후 인증서 신청기관에 요청하는 ASCII파일형태입니다.
+인증서발급기관은 CSR의 내용을 검토하고 실제 웹서버가 존재하는지 판단하여
+CERT 인증서를 발급해줍니다.
+SELinux 에 의해 Certificate files이 삭제 될 수 있다. 이로 인해 삭제된 구문을 원복시키기 위해 다음 명령어를 쓴다. 삭제 된 경우 이 명령어를 통해 복원 된다. 
+
+# restorecon -RvF /etc/pki
+/etc/pki/* 하위의 모든 폴더나 파일에서 삭제된 구문을 복원한다.
+
+# vi /etc/httpd/conf.d/ssl.conf
+아파치의 ssl 설정을 변경하기 위해 편집기로 열어 아래와 같이 수정한다.
+
+SSLCertificateFile /etc/pki/tls/certs/ca.crt
+SSLCertificateKeyFile /etc/pki/tls/private/ca.key
+
+# service httpd restart
+
+3. SSL VirtualHost 추가
+SSL은 443 포트를 사용하기 때문에 이를 위한 Virtualhost를 추가한다.
+
+# vi /etc/httpd/conf/httpd.conf
+httpd 설정 파일을 편집기로 열어 마지막 위치에 아래 내용을 입력한다. httpd.conf 파일 내에 예제로 적혀있는 내용이 있으니 복사&붙여넣기 하면 된다.
+
+# SSL Virtual host add
+NameVirtualHost *:443
+
+# SSL Virtual host add
+<VirtualHost *:443>
+    SSLEngine on
+    SSLCertificateFile /etc/pki/tls/certs/ca.crt
+    SSLCertificateKeyFile /etc/pki/tls/private/ca.key
+    ServerAdmin starkapin@tistory.com
+    DocumentRoot /var/www/html
+    ServerName ssl.starkapin.com
+    ErrorLog logs/ssl_starkapin_com_error_log
+    CustomLog logs/ssl_starkapin_com_error_log common
+</VirtualHost>
+
+
+# service httpd restart
+
+4. 방화벽 설정
+443 포트를 방화벽으로 허용시켜준다.
+
+# vi /etc/sysconfig/iptables
+편집기로 불러와 아래 내용을 추가한다.
+
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 443 -j ACCEPT
+
+# service iptables restart
+
+이제 웹으로 접속해서 확인 하면 인증서 경고가 발생하며 접속됨을 확인 할 수 있다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,82 @@
+windows 2003 공유 폴더 생성...
+1. 계정 : root 
+   암호 : 암호1234.
+2.c:\smbsamba 공유 Everyone 모든권한
+3. 작업그룹 : workgroup
+
+Centos A
+1. rpm -qa | grep samba
+samba-client
+samba-common 설치 확인
+
+2.windows 공유한 폴더 및 프린터 보이는지 확인
+smbclient -L <windows client ip 주소>
+smbclient -L 10.1.1.10
+암호 : 암호1234.
+3. 마운트할 디렉토리 생성
+mkdir /smbmount
+4. 마운트
+mount -t cifs /windows ip주소/공유폴더이름 마운트할 디렉토리
+mount -t cifs //10.1.1.10/smbsamba /smbmount
+암호 입력 
+
+----------------------------------
+리눅스의 자원 활용
+1. rpm -qa | grep samba
+samba  서버가 기본 설치 되어 있음
+
+2. service smb start
+3. mkdir /share
+   chmod 707 /share
+4. system-config-samba
+5. 설정 -> 서버 설정 : 작업그룹: workgroup 설명 : centos
+   보안 :인증모드 : 사용자 -> 공유
+로 변경
+6 공유 추가 클릭 ->디렉토리 : /share -> 확인  -> 모든 사용자에 접근 허가 체크(Everyone) ->  
+쓰기 가능, 보이기 체크  -> 확인
+7. 만일 방화벽이 있으면 samba 체크 해서 허용
+8. windows 에서 네트워크 드라이브 연결 
+내컴퓨터 -> 오른쪽클릭 -> 네트워크 드라이브 연결 	
+드라이브 문자 z
+폴더 : \\10.1.1.1\share		
+
+--------------------------------------------------------------------------------------
+SWAT(Samba Web Administration Tool)
+1. rpm -qa  samba-swat
+2. yum -y install samba-swat
+3. vi /etc/xinetd.d/swat
+4. 환경 설정
+ disable=yes -> no
+5. service xinetd restart
+6 방화벽 설정 포트번호 : 901
+7. 웹브라우저 
+http://127.0.0.1:901
+사용자 : root
+암호 : 암호1234.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,301 @@
+
+@@ FTP Service
+
+-> File Transfer Protocol. 
+-> TCP/IP 환경에서 파일 전송용 Application Protocol.
+-> 시스템에 등록된 사용자들을 위한 FTP Service 와 익명의
+   모든 사용자에게 개방하는 Anonymous FTP Service 가 있음.
+   일반적으로 익명 서비스의 경우 업로드는 허용치 않음.
+-> FTP는 TCP 기반으로서 TCP 서비스만 사용하게 됨.
+-> 20번의 Data 포트와 21번의 Command(Control)포트인 2개의 포트를 사용.
+-> FTP mode에 따라 Data 포트가 항상 20번 포트를 사용하는것은 아님.
+-> Active와 Passive 모드가 있으며 접속요청을 하는
+   클라이언트가 결정하게 됨.
+
+
+! Active Mode
+
+-> 클라이언트는 서버에게 자신의 Data 포트를 알려준 후
+   Listening 상태에서 서버로 부터의 접속을 대기 하는 형태임.
+-> 클라이언트에 방화벽이 설치된 경우 접속이 불가하게 됨. 
+
+<접속 절차>
+1) 클라이언트의 랜덤포트(n>1023)를 통해 서버의
+   Command 포트(21)에 접속요청.
+2) 이때 클라이언트는 Data 포트로 n+1 번 포트 정보를
+   서버에 전송 후 Listening.
+3) FTP 서버의 Data포트(20)는 클라이언트가 알려준
+   Data포트로 클라이언트에 접속.
+
+
+      <Port>      접속요청+ data 포트정보 전송       <port>
+Server 21 <----------------------------------------- n      Client
+                         수신확인 
+       21 -----------------------------------------> n
+                클라이언트의 data 포트로 접속
+       20 -----------------------------------------> n+1
+                         수신확인
+       20 <----------------------------------------- n+1
+
+
+! Passive Mode
+
+-> 서버가 클라이언트로 접속해야하는 문제점 개선.
+-> 즉, Command 포트, Data 포트 모두 클라이언트에서 서버로
+   접속하는 방식을 사용하여 Active mode에서 발생되었던
+   클라이언트의 방화벽에 의해 접속불가 되었던 문제를
+   해결할 수 있게 됨.
+-> 클라이언트에 응답해야할 서버의 많은 Data 포트가
+   필요하게 되는데 이때 서버에서는 사용할 Data 포트를
+   범위로 지정할 수 있음.
+
+< 접속절차>
+1) 클라이언트의 랜덤포트(n>1023)를 통해 서버의
+   Command 포트(21)에 접속요청.
+2) 클라이언트의 n+1인 Data 포트로 서버의
+   Data 포트(s>1023)로 접속시도.
+3) 서버의 Data 포트로 부터 클라이언트 요청에 대한 응답.
+
+
+
+      <Port>      접속요청+ data 포트정보 질의       <port>
+Server 21 <----------------------------------------- n      Client
+                    서버의 Data 포트정보 전송 
+       21 -----------------------------------------> n
+                     서버의 data 포트로 접속
+       s  <----------------------------------------- n+1
+                         수신확인
+       s  -----------------------------------------> n+1
+
+
+
+! vsFTP(Very Secure File Transfer Protocol)
+
+-> Red Hat Linux 계열의 기본 FTP Package
+
+
+! vsFTP 설치
+
+# rpm -qa | grep ftp                         -> 설치되었는지 여부 확인
+# yum -y install vsftpd                      -> 설치
+# service vsftpd {start|stop|restart|statis} -> 서비스 활성화/비활성화
+# netstat -ntlp | grep 21                    -> 포트 상태 확인
+
+
+! vsFTP 관련 파일/디렉토리
+
+/etc/vsftpd/vsftpd.conf -> 환경 설정파일
+/etc/sbin/vsftpd        -> ftp 서버 데몬
+/etc/rc.d/init.d/vsftpd -> 실행 스크립트 파일
+/etc/pam.d/vsftpd       -> PAM 인증 파일
+/etc/vsftpd.ftpusers    -> 접속불가 리스트 설정 파일
+/etc/vsftpd.user_list   -> userlist_deny 설정으로 특정사용자 허용여부 결정.
+/etc/xinetd.d/vsftpd    -> xinetd 기반의 서비스 설정 파일
+/var/ftp/               -> 익명사용자의 홈디렉토리
+
+
+! /etc/vsftpd/vsftpd.conf 환경설정
+
+<기본설정>
+anonymous_enable=YES        -> 익명사용자 허용여부
+local_enable=YES            -> 시스템의 일반사용자의 사용 허용여부
+write_enable=YES            -> 업로드 허용여부
+local_umask=022             -> 업로드 가능시 기본 퍼미션 지정
+anon_upload_enable=YES      -> 익명사용자 업로드 허용여부
+anon_mkdir_write_enable=YES -> 익명사용자 디렉토리 생성 허용여부
+dirmessage_enable=YES    -> 디렉토리 이동시 .message 파일내용 메시지 출력 
+xferlog_enable=YES       -> 파일 전송시 발생되는 로그정보 기록
+connect_from_port_20=YES -> 서버의 데이터 전송포트번호 지정
+chown_uploads=YES        -> 익명사용자에게 업로드 허용시 파일 소유자 변경
+chown_username=whoever   -> 익명사용자에게 업로드 허용시 파일 소유자 지정
+xferlog_file=/var/log/xferlog -> 특정위치에 로그파일 저장
+xferlog_std_format=YES   -> 표준포멧으로 로그파일 저장
+idle_session_timeout=600 -> 사용자 접속후 액션이 없을경우 자동 접속해지시간
+data_connection_timeout=120-> 데이터 전송 종료 대기시간
+nopriv_user=ftpsecure      -> 일반 사용자가 vsftpd 데몬 실행
+ftpd_banner=Welcome to Bash FTP service. -> 사용자 지정 배너값 출력
+ls_recurse_enable=YES   -> ls -R 허용여부
+linten=YES              -> standalone과 xinetd 방식중에서 선택
+pam_service_name=vsftpd -> PAM을 이용한 인증을 하고자 할 경우
+tcp_wrappers=YES        -> tcp wraper이용한 제어. hosts.allow, hosts.deny
+
+<디렉토리이동제한>
+chroot_local_user=YES  -> 로컬 사용자에게 chroot 적용여부
+chroot_list_enable=YES -> chroot 예외 사용자 목록 사용할것인지 여부
+chroot_list_file=/etc/vsftpd/chroot_list -> 예외 사용자 목록의 파일지정
+
+<사용자접근제한>
+userlist_enable=YES    -> 사용자 접근제어 기능 사용여부
+userlist_deny=YES      -> 사용자 목록을 거부/허용 목록으로할것인지 여부
+userlist_file=/path/file_name -> 거부/허용 목록의 파일위치 지정
+
+<최대전송속도제한>
+anon_max_rate=0     -> 익명 사용자 다운로드 최대 전송속도지정. 0=제한없음.
+local_max_rate=0    -> 로컬 사용자 다운로드 최대 전송속도지정
+
+<최대접속자수제한>
+max_clients=0          -> 동시 접속 클라이언트 수 지정
+max_per_ip=0           -> 동시 ftp 접속자 수 제한
+
+<대기시간설정>
+connect_timeout=120 -> Active mode 사용하는 클라이언트 접속허용시간 설정
+accept_timeoiut=120 -> Passive mode 사용하는 클라이언트 접속허용시간 설정
+
+<모드설정>
+port_enable=YES        -> 데이터 전송시 Active mode 사용할것인지 설정
+ftp_data_port=20       -> 데이터 전송 포트 지정
+pasv_enable=YES        -> Passive mode 사용할 것인지 설정
+pasv_min_port          -> Passive mode 연결시 할당될 포트 대역 설정
+pasv_max_port          ->
+ascii_upload_enable=NO -> ascii 모드로 업/다운로드 여부 설정
+ascii_download_enable=NO
+
+<권한설정>
+file_open_mode=0644    -> 파일 업로드시 권한
+force_dot_file=NO      -> 숨김 파일/디렉토리 보여줄것인지 여부
+hide_ids=YES           -> 디렉토리목록에 UID 대신 FTP로 표시
+download_enable=YES    -> 다운로드에대한 권한 설정
+cmds_allowd=none       -> 사용자에게 허용할 명령어 지정
+deny_file={*.ios|*.mp3}-> 업로드 거부할 파일명 지정
+hide_file={*.mov}      -> 숨김 파일명 지정
+async_abor_enable=NO   -> 파일 전송 취소시 취소되지 않는 상태 방지
+
+<가상사용자설정>
+guest_enable=NO        -> 가상사용자 운영여부 지정
+guest_username=ftp     -> 가상사용자의 실제 계정명 지정
+user_sub_token=xxx     -> 가상 사용자들을 지칭할 가상의 변수 지정
+local_root=/home/virtual/dir_name -> 가상사용자들의 홈디렉토리
+
+<기타설정>
+no_anon_password=YES   -> 익명사용자 접속시 패스워드 사용여부
+anon_root=/dir_name    -> 익명사용자 홈디렉토리. 기본위치는 /var/ftp
+use_localtime=YES      -> 국내시간으로 보여줌.
+
+
+
+[실습]
+
+1. 로컬 사용자들과 익명의 사용자들을 위한 ftp서버 구축을
+   xinetd 타입으로 설정하시오.
+
+<tip>
+
+# vi /etc/vsftpd/vsftpd.conf 내용 편집
+linten=NO -> xinetd 방식으로 데몬이 실행되도록 함.
+local_enable = YES
+write_enable = YES
+
+# vi /etc/xinetd/ftp 파일 생성 및 편집
+
+
+2. 먼저 1)번 이 정상적으로 동작되는 것을 확인 후 다음과 같이
+   가상 사용자 추가 설정은 standalone 타입으로 설정하시오.
+
+   /etc/passwd에 존재하는 사용자들은 21번 포트를 이용하여
+   xinetd 타입으로 서비스되도록 하며, 기타 가상 사용자들에게는
+   1004 포트를 지정하여 standalone 타입으로 서비스가 되도록 하시오.
+
+<tip>
+
+1) db 패키지 설치
+# yum -y install db4-utils -> 가상사용자를 db포멧으로 변환.
+
+2) 가상 사용자 목록
+# vi /etc/vsftpd/vusers.txt -> 가상사용자와 패스워드의 두줄을 한쌍으로 편집.
+vuser1
+user123
+vuser2
+user123
+~
+~
+:wq
+
+3) 가상의 ftp사용자들을 db 포멧으로 변환
+# db_load -T -t hash -f /etc/vsftpd/vusers.txt /etc/vsftpd/vt_user.db
+# chmod 600 /etc/vsftpd/virtual.db -> 보안을 위한 접근권한 설정.
+
+4) 사용자 인증에 사용할 pam 파일 생성
+# vi /etc/pam.d/vsftpd.pam
+auth    required /lib/security/pam_userdb.so db=/etc/vsftpd/vt_user 
+account required /lib/security/pam_userdb.so db=/etc/vsftpd/vt_user
+~
+~
+:wq
+
+5) 가상사용자 계정 생성 및 홈디렉토리 지정
+# useradd -d /home/virtual virtual
+# cp /etc/hosts /home/virtual     -> hosts파일 복사 후 소유권 변경.
+# chown virtual.virtual /home/virtual/hosts
+
+6) 가상 ftp 환경설정 파일
+# cp -p /etc/vsftpd/vsftpd.conf  /etc/vsftpd/vsftpd_vt.conf
+
+# vi /etc/vsftpd/vsftpd_vt.conf
+anonymous_enable=NO           -> ftp로 익명접속 불허
+local_enable=YES              -> 가상 유저도 로컬 사용자이므로 yes
+write_enable=YES              -> ftp에 접속해서 파일 생성 가능
+local_umask=022               -> 업로드 파일 기본 퍼미션 지정
+dirmessage_enable=YES         -> 
+xferlog_enable=YES            -> 접속 로그 남김
+connect_from_port_20=YES
+xferlog_file=/var/log/vsftpd.log
+chroot_local_user=YES         -> 홈디렉토리외는 이동금지
+listen=YES                    -> vsftp의 가상ftp는 standalone 모드에서 동작되도록.
+listen_port=1004              -> vsftpd 실행시키기 위해 listen=yes
+guest_enable=YES              -> 가상ftp 유저 운영
+guest_username=virtual        -> 가상유저의 실제 계정 지정
+pam_service_name=vsftpd.pam   -> 생성된 pam 파일이름 지정
+pasv_min_port=30000           -> 접속 port 대역 설정
+pasv_max_port=30999
+virtual_use_local_privs=YES   -> 가상사용자에게 시스템사용자의 권한과 같은 권한 부여.
+                                 설정되어있지 않으면 익명 권한을 갖게됨.
+user_sub_token=$USER          -> 가상유저에게 서로다른 홈디렉토리부여
+local_root=/home/virtual/$USER
+~
+~
+:wq
+
+# cd /home/virtual
+# mkdir vuser1 vuser2         -> 가상유저들의 홈디렉토리 생성
+# chown virtual.virtual *     -> 가상유저 홈디렉토리 소유권 변경
+
+7) vsftpd 실행 -> vsftpd는 standalone 방식으로 구동시켜야 함.
+
+# /usr/sbin/vsftpd /etc/vsftpd/vsftpd_vt.conf &     -> vsftpd 실행
+# ps -ef | grep ftpd
+
+
+
+3. 검증
+-> 클라이언트에서 로컬 사용자 접속가능여부 테스트
+-> 클라이언트에서 가상 사용자 접속가능여부 테스트
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

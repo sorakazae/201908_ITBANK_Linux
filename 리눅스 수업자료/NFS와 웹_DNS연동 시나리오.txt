@@ -1,0 +1,22 @@
+리눅스 1 
+네임서버
+www.itbank.vm
+가상호스트 이용
+웹서버 : www.itbank.vm
+리눅스2
+네임서버
+www.ibbank.vm
+
+FTP 서버 각 사용자마다 다른 사용자 디렉토리가 안보이도록 설정
+NFS 서버 /web 읽기권한
+/web 디렉토리와 마운트 -> index.html
+리눅스1 /www1 마운트
+www.itbank.vm
+windows 2008R2 돌리시오
+공유 : share
+Everyone 모든권한 -> 리눅스에서 /share 디렉토리와 마운트
+NFS 공유 : nfs -> index.html 
+읽기/쓰기 권한부여 , root 권한 허가..
+리눅스1 
+디렉토리 : /www2 윈도우 2008R2 NFS 공유와 마운트 
+www.ibbank.vm 

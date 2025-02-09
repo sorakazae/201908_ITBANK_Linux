@@ -1,0 +1,82 @@
+1. 그룹생성 : itbankgroup
+2. 사용자 계정생성
+itbank 
+홈디렉토리 : /user/home/itbank
+쉘 : ksh
+uid : 600
+그룹 : itbankgroup
+암호 : 암호1234.
+3.. 일반 사용자 계정 
+test 사용자 생성
+4. 랜카드 하나 추가(eth1) 
+ip :192.168.100.130
+mask : 255.255.255.0
+gw : 192.168.0.2
+기본 dns : 192.168.0.2
+
+5. root 의 프로필에 항상
+(eth1) 항상 랜카드 활성화 되도록 설정 하시오...
+
+6. vi /CorpDous/Secrit/Secrit.txt 문서생성
+7. root만 접근이 가능하도록 설정하시오
+(단. 일반사용자로 로그인 해서 접근이 안되도록 하시오.)
+8. 7번을 확인 후 Secrit의 소유권을  itbank로 변경 하시오...
+9  /linktest  디렉토리 생성
+vi 1.txt 내용 입력 하시오..
+하드링크
+심볼릭링크 생성하시오
+원본 파일의 위치를 1.txt 상위 폴더로 이동 후 링크 작동 여부 확인 하시오.
+
+10. telnet-server를 yum 파일을 이용해서 설치 하시오..
+원격에서 접속이 가능하도록  설정하시오..
+
+12 . httpd 데몬이 실행 되도록 설정하시오..
+index.html 생성
+<html>
+<head></head>
+<body>
+www site
+</body>
+</html> 
+
+13 매월 15일 새벽 4시1에 자동백업이 되도록 설정하시오.
+단 스크립트로 처리하시오..
+백업위치 :/Mybackup
+자동스크립트 파일 : backup.sh
+파일이등 : backup월일.tar.gz 형태로 만드시오...
+
+14. at 명령어를 이용해서 
+1분 뒤에 /abc 디렉토리 생성
+/linktest/1.txt 파일을 /abc 디렉토리로 복사 한 후 
+/linktest 디렉토리를 삭제하도록 만드시오..
+
+15. root가 암호를 잃어버렸다고 가정하고  응급복구 모드로 접속하여 root의 암호를 1234로 설정허시오(Runlevel  1로  부팅)
+
+16 부팅커널에 접근 못하도록 부팅커널에 암호를 설정하시오..
+md5로 암호화하여 설정하시오(암호 : 1111)
+
+17. 하드디스크 하나 추가
+용량 : 1Giga 
+파티션을 3개로 설정하시오..(논리적인 파티션 3개 생성)
+/dev/sdb1 /dev/sdb2 /dev/sdbc
+
+/mydata1 /mydata2  /mydata3 
+각각의 파티션을 마운트 하시오..
+/etc/fstab 등록 시키시오
+
+18. 하드디스크를 4개 추가 시키시오..
+/dev/sdc /dev/sdd -> raid 0설정
+/dev/sde /dev/sdf ->raid1로 구성
+/raid0data   /raid1data
+각각 마운트 하시오
+
+19. /raid0data /raid1data에 test 파일을 생성한다.
+/dev/sdf  하드디스크를 제거 후  내결함성 확인
+하드 디스크 하나를 추가해서 원래의 상태로 복구하시오..
+
+20 raid0 /dev/sdc 하드디스크 제거 후  부팅 하시오 
+내결함성을  허용하지 않으므로 부팅이 안된다...
+
+원본 centos 5.x 버전을 rescure 복구 모드로 부팅해서 
+fstab에서 raid0 -> 주석 처리 후 정상적인 부팅이 이루어지도록 설정하시오..
+
